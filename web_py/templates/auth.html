@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAK.sh - Package Automation Kit</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='pak-logo.svg') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0F172A;
+            --bg-darker: #020617;
+            --terminal-bg: #1E293B;
+            --terminal-header: #334155;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --accent-blue: #4A90E2;
+            --accent-green: #10B981;
+            --accent-cyan: #06B6D4;
+            --accent-red: #EF4444;
+            --border-color: #1E293B;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Animated background */
+        .background-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .grid-line {
+            position: absolute;
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
+            animation: move 20s linear infinite;
+        }
+        
+        .grid-line.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+        
+        .grid-line.vertical {
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--border-color), transparent);
+        }
+        
+        @keyframes move {
+            0% { transform: translate(-100%, 0); }
+            100% { transform: translate(100%, 0); }
+        }
+        
+        /* Auth container */
+        .auth-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            z-index: 1;
+        }
+        
+        /* Logo */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .logo {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+        
+        /* Terminal window */
+        .terminal-window {
+            background: var(--terminal-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .terminal-header {
+            background: var(--terminal-header);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .terminal-dots {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .dot-red { background: #FF5F57; }
+        .dot-yellow { background: #FFBD2D; }
+        .dot-green { background: #28CA42; }
+        
+        .terminal-title {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        .terminal-body {
+            padding: 40px;
+        }
+        
+        /* Form styling */
+        .auth-form h2 {
+            font-size: 1.875rem;
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: var(--bg-darker);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Terminal-style input */
+        .terminal-input {
+            position: relative;
+        }
+        
+        .terminal-prompt {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-size: 16px;
+            pointer-events: none;
+        }
+        
+        .terminal-input .form-input {
+            padding-left: 40px;
+        }
+        
+        /* Submit button */
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            background: #3D7FDB;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 144, 226, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Error message */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            animation: shake 0.5s ease;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        /* Remember me */
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-blue);
+        }
+        
+        .checkbox-group label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .forgot-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .forgot-link:hover {
+            color: var(--accent-cyan);
+        }
+        
+        /* Loading state */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        
+        /* Footer */
+        .auth-footer {
+            text-align: center;
+            margin-top: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        .auth-footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .terminal-body {
+                padding: 30px 20px;
+            }
+            
+            .auth-form h2 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* Flash messages */
+        .flash-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .flash-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6EE7B7;
+        }
+        
+        .flash-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #FCA5A5;
+        }
+        
+        /* Tab system */
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+        
+        .auth-tab.active {
+            border-bottom-color: var(--accent-blue);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="background-animation">
+        <div class="grid-line horizontal" style="top: 10%; animation-duration: 15s;"></div>
+        <div class="grid-line horizontal" style="top: 30%; animation-duration: 20s; animation-delay: -5s;"></div>
+        <div class="grid-line horizontal" style="top: 50%; animation-duration: 25s; animation-delay: -10s;"></div>
+        <div class="grid-line horizontal" style="top: 70%; animation-duration: 18s; animation-delay: -3s;"></div>
+        <div class="grid-line horizontal" style="top: 90%; animation-duration: 22s; animation-delay: -8s;"></div>
+        
+        <div class="grid-line vertical" style="left: 10%; animation-duration: 18s;"></div>
+        <div class="grid-line vertical" style="left: 30%; animation-duration: 22s; animation-delay: -7s;"></div>
+        <div class="grid-line vertical" style="left: 50%; animation-duration: 20s; animation-delay: -12s;"></div>
+        <div class="grid-line vertical" style="left: 70%; animation-duration: 25s; animation-delay: -4s;"></div>
+        <div class="grid-line vertical" style="left: 90%; animation-duration: 19s; animation-delay: -9s;"></div>
+    </div>
+    
+    <div class="auth-container">
+        <div class="logo-container">
+            <div class="logo">
+                <svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" height="60">
+                    <defs>
+                        <linearGradient id="pakBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#5B9FED;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#4A90E2;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="subtle-shadow">
+                            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Main text with refined spacing -->
+                    <text x="60" y="60" style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; font-size: 60px; font-weight: 600; letter-spacing: -1px;">
+                        <tspan fill="#4A90E2">pak</tspan>
+                    </text>
+                    
+                    <!-- Refined terminal box -->
+                    <rect x="190" y="25" width="80" height="42" rx="8" ry="8" fill="#2C3E50" filter="url(#subtle-shadow)"/>
+                    
+                    <!-- Terminal details -->
+                    <circle cx="205" cy="35" r="2" fill="#FF5F56"/>
+                    <circle cx="215" cy="35" r="2" fill="#FFBD2D"/>
+                    <circle cx="225" cy="35" r="2" fill="#27C93F"/>
+                    
+                    <text x="205" y="45" style="font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 14px; font-weight: 500; fill: #10B981;">$</text>
+                    <text x="220" y="55" style="font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 24px; font-weight: 400; fill: #FFFFFF; letter-spacing: 1px;">.sh</text>
+                </svg>
+            </div>
+            <p class="tagline">Package Automation Kit</p>
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                <div class="terminal-title">Authentication Required</div>
+                <div></div>
+            </div>
+            
+            <div class="terminal-body">
+                {% if reset_token %}
+                    <!-- Password Reset Form -->
+                    <div class="auth-form active">
+                        <h2>🔐 Reset Password</h2>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="reset_password">
+                            <input type="hidden" name="token" value="{{ reset_token }}">
+                            
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">#</span>
+                                    <input type="password" name="password" class="form-input" required minlength="8" placeholder="••••••••">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Confirm Password</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">#</span>
+                                    <input type="password" name="password_confirm" class="form-input" required minlength="8" placeholder="••••••••">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="submit-btn">Reset Password</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <!-- Login/Register Tabs -->
+                    <div class="auth-tabs">
+                        <div class="auth-tab active" onclick="showTab('login')">Login</div>
+                        <div class="auth-tab" onclick="showTab('register')">Register</div>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <div id="login-form" class="auth-form active">
+                        <form method="POST">
+                            <input type="hidden" name="action" value="login">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">$</span>
+                                    <input type="email" name="email" class="form-input" required placeholder="admin@example.com">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">#</span>
+                                    <input type="password" name="password" class="form-input" required placeholder="••••••••">
+                                </div>
+                            </div>
+                            
+                            <div class="form-footer">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="remember" name="remember">
+                                    <label for="remember">Remember me</label>
+                                </div>
+                                <a href="#" class="forgot-link" onclick="showTab('forgot')">Forgot password?</a>
+                            </div>
+                            
+                            <button type="submit" class="submit-btn">Access Dashboard</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Register Form -->
+                    <div id="register-form" class="auth-form">
+                        <form method="POST">
+                            <input type="hidden" name="action" value="register">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Name</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">$</span>
+                                    <input type="text" name="name" class="form-input" required placeholder="John Doe">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">$</span>
+                                    <input type="email" name="email" class="form-input" required placeholder="admin@example.com">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">#</span>
+                                    <input type="password" name="password" class="form-input" required minlength="8" placeholder="••••••••">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="submit-btn">Create Account</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Forgot Password Form -->
+                    <div id="forgot-form" class="auth-form">
+                        <h2>🔐 Reset Password</h2>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="forgot_password">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <div class="terminal-input">
+                                    <span class="terminal-prompt">$</span>
+                                    <input type="email" name="email" class="form-input" required placeholder="admin@example.com">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="submit-btn">Send Reset Link</button>
+                        </form>
+                        
+                        <div class="form-footer">
+                            <a href="#" class="forgot-link" onclick="showTab('login')">Back to login</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="auth-footer">
+            <p>Protected by PAK.sh Security | <a href="https://pak.sh">pak.sh</a></p>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all forms
+            document.querySelectorAll('.auth-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected form
+            document.getElementById(tabName + '-form').classList.add('active');
+            
+            // Add active class to clicked tab (for login/register only)
+            if (tabName === 'login' || tabName === 'register') {
+                event.target.classList.add('active');
+            }
+        }
+        
+        // Password confirmation validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.querySelector('input[name="password"]');
+            const confirmInput = document.querySelector('input[name="password_confirm"]');
+            
+            if (passwordInput && confirmInput) {
+                confirmInput.addEventListener('input', function() {
+                    if (this.value !== passwordInput.value) {
+                        this.setCustomValidity('Passwords do not match');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+        });
+        
+        // Terminal effect for inputs
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.querySelector('.terminal-prompt').style.color = 'var(--accent-cyan)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.querySelector('.terminal-prompt').style.color = 'var(--accent-green)';
+            });
+        });
+    </script>
+</body>
+</html> 

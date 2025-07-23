@@ -1,0 +1,25 @@
+{
+    "name": "composer",
+    "type": "php",
+    "language": "php",
+    "registry": "https://packagist.org",
+    "api": "https://packagist.org/packages/{package}.json",
+    "health_endpoint": "https://packagist.org/",
+    "commands": {
+        "publish": "composer publish",
+        "info": "composer show {package}",
+        "versions": "composer show {package} --all",
+        "install": "composer install",
+        "build": "composer build",
+        "test": "composer test"
+    },
+    "files": {
+        "required": ["composer.json"],
+        "optional": ["README.md", "LICENSE", "src/"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "PACKAGIST_TOKEN",
+        "config_key": "packagist_token"
+    }
+}

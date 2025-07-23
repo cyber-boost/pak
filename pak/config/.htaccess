@@ -1,0 +1,133 @@
+# PAK.sh .htaccess Configuration Template
+# Copy this to your web root directory
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "no-referrer-when-downgrade"
+    Header always set Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Protect sensitive files
+<Files ".htaccess">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".htpasswd">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.log">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.db">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect config directory
+<Directory "config">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Protect data directory
+<Directory "data">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Rate limiting for webhook
+<IfModule mod_ratelimit.c>
+    <Location "/webhook/telemetry">
+        SetOutputFilter RATE_LIMIT
+        SetEnv rate-limit 10
+    </Location>
+</IfModule>
+
+# API key authentication for webhook
+<Location "/webhook/telemetry">
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{HTTP:X-API-Key} !^YOUR_API_KEY_HERE$
+        RewriteRule .* - [F]
+    </IfModule>
+</Location>
+
+# Basic auth for telemetry dashboard
+<Location "/telemetry">
+    AuthType Basic
+    AuthName "PAK.sh Telemetry Dashboard"
+    AuthUserFile /opt/pak/config/.htpasswd
+    Require valid-user
+</Location>
+
+# Basic auth for admin area
+<Location "/admin">
+    AuthType Basic
+    AuthName "PAK.sh Admin"
+    AuthUserFile /opt/pak/config/.htpasswd
+    Require valid-user
+</Location>
+
+# API key authentication for telemetry API
+<LocationMatch "^/api/telemetry/">
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{HTTP:X-API-Key} !^YOUR_API_KEY_HERE$
+        RewriteRule .* - [F]
+    </IfModule>
+</LocationMatch>
+
+# Cache control for static files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType application/json "access plus 1 hour"
+    ExpiresByType text/plain "access plus 1 hour"
+</IfModule>
+
+# Gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Prevent access to backup files
+<FilesMatch "~$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Custom error pages
+ErrorDocument 401 /error/401.html
+ErrorDocument 403 /error/403.html
+ErrorDocument 404 /error/404.html
+ErrorDocument 500 /error/500.html 

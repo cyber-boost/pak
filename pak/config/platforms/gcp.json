@@ -1,0 +1,29 @@
+{
+    "name": "gcp",
+    "type": "cloud",
+    "language": "terraform",
+    "registry": "https://gcp.org",
+    "api": "https://api.gcp.org",
+    "health_endpoint": "https://gcp.org/health",
+    "commands": {
+        "publish": "gcp publish",
+        "info": "gcp info {package}",
+        "versions": "gcp versions {package}",
+        "install": "gcp install",
+        "build": "gcp build",
+        "test": "gcp test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "GCP_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["gcp install", "gcp test", "gcp build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

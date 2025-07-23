@@ -1,0 +1,72 @@
+# PAK.sh ignore file
+
+# Exclude old web directory - only web_py should be included
+web/
+z_archive/
+admin/
+summaries/
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Node modules
+node_modules/
+
+# Build artifacts
+target/
+dist/
+build/
+*.egg-info/
+
+# Log files
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git files
+.git/
+.gitignore
+
+# Credential files
+credentials.yaml
+credentials.yml
+*.key
+*.pem
+*.p12
+
+# Environment-specific files
+.env.local
+.env.production
+.env.staging
+
+# Backup files
+*.bak
+*.backup
+*.old

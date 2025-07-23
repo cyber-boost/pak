@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}PAK.sh - Commands{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>PAK.sh Commands</h1>
+    <p>Available commands and their usage for the PAK.sh package automation system.</p>
+</div>
+
+<div class="card">
+    <h2>Core Commands</h2>
+    
+    <div style="color: var(--text-secondary);">
+        <h3>Installation</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak install &lt;package&gt;</code>
+            <p style="margin-top: 0.5rem;">Install a package with automatic dependency resolution</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak install --file packages.txt</code>
+            <p style="margin-top: 0.5rem;">Install multiple packages from a file</p>
+        </div>
+        
+        <h3>Management</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak list</code>
+            <p style="margin-top: 0.5rem;">List all installed packages</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak update &lt;package&gt;</code>
+            <p style="margin-top: 0.5rem;">Update a specific package</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak remove &lt;package&gt;</code>
+            <p style="margin-top: 0.5rem;">Remove a package and its dependencies</p>
+        </div>
+        
+        <h3>Information</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak info &lt;package&gt;</code>
+            <p style="margin-top: 0.5rem;">Show detailed information about a package</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak search &lt;query&gt;</code>
+            <p style="margin-top: 0.5rem;">Search for packages</p>
+        </div>
+        
+        <h3>System</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak init</code>
+            <p style="margin-top: 0.5rem;">Initialize PAK.sh in the current directory</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak config</code>
+            <p style="margin-top: 0.5rem;">Show or edit configuration</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak doctor</code>
+            <p style="margin-top: 0.5rem;">Check system health and diagnose issues</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Advanced Commands</h2>
+    
+    <div style="color: var(--text-secondary);">
+        <h3>Batch Operations</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak batch install packages.txt</code>
+            <p style="margin-top: 0.5rem;">Install multiple packages in parallel</p>
+        </div>
+        
+        <h3>Rollback</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak rollback &lt;package&gt; --version &lt;version&gt;</code>
+            <p style="margin-top: 0.5rem;">Rollback a package to a specific version</p>
+        </div>
+        
+        <h3>Telemetry</h3>
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak telemetry enable</code>
+            <p style="margin-top: 0.5rem;">Enable telemetry data collection</p>
+        </div>
+        
+        <div style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <code>pak telemetry disable</code>
+            <p style="margin-top: 0.5rem;">Disable telemetry data collection</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Configuration</h2>
+    <p>PAK.sh can be configured using environment variables or a configuration file:</p>
+    
+    <div style="color: var(--text-secondary);">
+        <h3>Environment Variables</h3>
+        <ul style="margin-left: 1.5rem;">
+            <li><code>PAK_TELEMETRY_URL</code> - Telemetry endpoint URL</li>
+            <li><code>PAK_API_KEY</code> - API key for telemetry</li>
+            <li><code>PAK_LOG_LEVEL</code> - Logging level (debug, info, warn, error)</li>
+            <li><code>PAK_CACHE_DIR</code> - Cache directory path</li>
+        </ul>
+        
+        <h3>Configuration File</h3>
+        <p>Create a <code>pak.config</code> file in your project root:</p>
+        <pre style="background: var(--bg-darker); padding: 1rem; border-radius: 6px; overflow-x: auto;">
+[telemetry]
+enabled = true
+url = https://yourdomain.com/api/telemetry
+api_key = YOUR_API_KEY_HERE
+
+[logging]
+level = info
+file = pak.log
+
+[cache]
+directory = .pak/cache
+max_size = 1GB</pre>
+    </div>
+</div>
+{% endblock %} 

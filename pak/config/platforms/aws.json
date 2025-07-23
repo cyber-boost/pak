@@ -1,0 +1,29 @@
+{
+    "name": "aws",
+    "type": "cloud",
+    "language": "terraform",
+    "registry": "https://aws.org",
+    "api": "https://api.aws.org",
+    "health_endpoint": "https://aws.org/health",
+    "commands": {
+        "publish": "aws publish",
+        "info": "aws info {package}",
+        "versions": "aws versions {package}",
+        "install": "aws install",
+        "build": "aws build",
+        "test": "aws test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "AWS_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["aws install", "aws test", "aws build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

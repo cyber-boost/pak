@@ -1,0 +1,36 @@
+{
+    "name": "dockerhub",
+    "type": "container",
+    "language": "docker",
+    "registry": "https://hub.docker.com",
+    "api": "https://hub.docker.com/v2/repositories/{package}",
+    "health_endpoint": "https://hub.docker.com/v2/",
+    "commands": {
+        "publish": "docker push {package}:{version}",
+        "info": "docker inspect {package}",
+        "versions": "docker images {package}",
+        "install": "docker pull {package}",
+        "build": "docker build -t {package}:{version} .",
+        "test": "docker run --rm {package}:{version} test"
+    },
+    "files": {
+        "required": ["Dockerfile"],
+        "optional": ["README.md", "LICENSE", ".dockerignore", "docker-compose.yml"]
+    },
+    "authentication": {
+        "type": "login",
+        "env_var": "DOCKER_USERNAME",
+        "password_var": "DOCKER_PASSWORD",
+        "login_command": "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+    },
+    "version_management": {
+        "file": "Dockerfile",
+        "field": "LABEL version",
+        "update_command": "sed -i 's/LABEL version=\".*\"/LABEL version=\"{version}\"/' Dockerfile"
+    },
+    "deployment": {
+        "pre_hooks": ["docker build -t {package}:{version} .", "docker run --rm {package}:{version} test"],
+        "publish_flags": [],
+        "rollback_support": true
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "name": "dotnet",
+    "type": "dotnet",
+    "language": "csharp",
+    "registry": "https://dotnet.org",
+    "api": "https://api.dotnet.org",
+    "health_endpoint": "https://dotnet.org/health",
+    "commands": {
+        "publish": "dotnet publish",
+        "info": "dotnet info {package}",
+        "versions": "dotnet versions {package}",
+        "install": "dotnet install",
+        "build": "dotnet build",
+        "test": "dotnet test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "DOTNET_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["dotnet install", "dotnet test", "dotnet build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

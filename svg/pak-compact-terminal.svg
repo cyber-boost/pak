@@ -1,0 +1,38 @@
+<svg viewBox="0 0 380 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="darkTerminalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2B343B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E252B;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.15"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect x="50" y="50" width="380" height="140" rx="10" ry="10" fill="url(#darkTerminalGradient)" filter="url(#softShadow)"/>
+  
+  <!-- Simplified content -->
+  <text x="70" y="105" style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace; font-size: 42px; font-weight: 400;">
+    <tspan fill="#00E676">$</tspan>
+    <tspan fill="#FFFFFF" dx="8">pak</tspan>
+  </text>
+  
+  <text x="70" y="150" style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace; font-size: 32px; font-weight: 300;">
+    <tspan fill="#29B6F6">#</tspan>
+    <tspan fill="#29B6F6" dx="8">deploy</tspan>
+  </text>
+  
+  <!-- Static cursor -->
+  <rect x="245" y="125" width="18" height="28" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Corner accent -->
+  <path d="M 410 50 Q 430 50 430 70 L 430 80" stroke="#00E676" stroke-width="2" fill="none" opacity="0.5"/>
+</svg> 

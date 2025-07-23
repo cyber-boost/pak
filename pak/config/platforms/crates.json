@@ -1,0 +1,29 @@
+{
+    "name": "crates",
+    "type": "rust",
+    "language": "rust",
+    "registry": "https://crates.org",
+    "api": "https://api.crates.org",
+    "health_endpoint": "https://crates.org/health",
+    "commands": {
+        "publish": "crates publish",
+        "info": "crates info {package}",
+        "versions": "crates versions {package}",
+        "install": "crates install",
+        "build": "crates build",
+        "test": "crates test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "CRATES_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["crates install", "crates test", "crates build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

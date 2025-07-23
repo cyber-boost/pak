@@ -1,0 +1,29 @@
+{
+    "name": "go",
+    "type": "go",
+    "language": "go",
+    "registry": "https://go.org",
+    "api": "https://api.go.org",
+    "health_endpoint": "https://go.org/health",
+    "commands": {
+        "publish": "go publish",
+        "info": "go info {package}",
+        "versions": "go versions {package}",
+        "install": "go install",
+        "build": "go build",
+        "test": "go test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "GO_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["go install", "go test", "go build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

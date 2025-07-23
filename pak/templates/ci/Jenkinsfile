@@ -1,0 +1,202 @@
+pipeline {
+    agent any
+    
+    environment {
+        NODE_VERSION = '18'
+        PYTHON_VERSION = '3.11'
+        RUST_VERSION = '1.70'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Setup') {
+            parallel {
+                stage('Setup Node.js') {
+                    when {
+                        anyOf {
+                            changeset pattern: "package.json", comparator: "REGEXP"
+                            changeset pattern: ".*\\.js$", comparator: "REGEXP"
+                            changeset pattern: ".*\\.ts$", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash'
+                        sh 'source ~/.bashrc && nvm install $NODE_VERSION && nvm use $NODE_VERSION'
+                    }
+                }
+                
+                stage('Setup Python') {
+                    when {
+                        anyOf {
+                            changeset pattern: "requirements.txt", comparator: "REGEXP"
+                            changeset pattern: "setup.py", comparator: "REGEXP"
+                            changeset pattern: ".*\\.py$", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'pyenv install $PYTHON_VERSION && pyenv global $PYTHON_VERSION'
+                    }
+                }
+                
+                stage('Setup Rust') {
+                    when {
+                        anyOf {
+                            changeset pattern: "Cargo.toml", comparator: "REGEXP"
+                            changeset pattern: ".*\\.rs$", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+                        sh 'source ~/.cargo/env && rustup default $RUST_VERSION'
+                    }
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    if (fileExists('package.json')) {
+                        sh 'npm ci'
+                    }
+                    if (fileExists('requirements.txt')) {
+                        sh 'pip install -r requirements.txt'
+                    }
+                    if (fileExists('Cargo.toml')) {
+                        sh 'cargo build'
+                    }
+                }
+            }
+        }
+        
+        stage('Test') {
+            parallel {
+                stage('Node.js Tests') {
+                    when {
+                        anyOf {
+                            changeset pattern: "package.json", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'npm test'
+                    }
+                }
+                
+                stage('Python Tests') {
+                    when {
+                        anyOf {
+                            changeset pattern: "requirements.txt", comparator: "REGEXP"
+                            changeset pattern: "setup.py", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'pytest'
+                    }
+                }
+                
+                stage('Rust Tests') {
+                    when {
+                        anyOf {
+                            changeset pattern: "Cargo.toml", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        sh 'cargo test'
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                sh 'curl -sSL https://pak.sh/install | bash'
+                sh 'pak scan . --platform all'
+            }
+        }
+        
+        stage('Build') {
+            when {
+                tag pattern: "v*", comparator: "REGEXP"
+            }
+            steps {
+                script {
+                    def version = env.TAG_NAME.replaceAll('v', '')
+                    sh "pak build . --version $version"
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            when {
+                tag pattern: "v*", comparator: "REGEXP"
+            }
+            parallel {
+                stage('Deploy to NPM') {
+                    when {
+                        anyOf {
+                            changeset pattern: "package.json", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        script {
+                            def version = env.TAG_NAME.replaceAll('v', '')
+                            withCredentials([string(credentialsId: 'npm-token', variable: 'NPM_TOKEN')]) {
+                                sh "pak deploy . --platform npm --version $version"
+                            }
+                        }
+                    }
+                }
+                
+                stage('Deploy to PyPI') {
+                    when {
+                        anyOf {
+                            changeset pattern: "requirements.txt", comparator: "REGEXP"
+                            changeset pattern: "setup.py", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        script {
+                            def version = env.TAG_NAME.replaceAll('v', '')
+                            withCredentials([string(credentialsId: 'pypi-token', variable: 'PYPI_TOKEN')]) {
+                                sh "pak deploy . --platform pypi --version $version"
+                            }
+                        }
+                    }
+                }
+                
+                stage('Deploy to Cargo') {
+                    when {
+                        anyOf {
+                            changeset pattern: "Cargo.toml", comparator: "REGEXP"
+                        }
+                    }
+                    steps {
+                        script {
+                            def version = env.TAG_NAME.replaceAll('v', '')
+                            withCredentials([string(credentialsId: 'cargo-token', variable: 'CARGO_TOKEN')]) {
+                                sh "pak deploy . --platform cargo --version $version"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

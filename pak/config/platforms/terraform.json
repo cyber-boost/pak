@@ -1,0 +1,29 @@
+{
+    "name": "terraform",
+    "type": "infrastructure",
+    "language": "hcl",
+    "registry": "https://terraform.org",
+    "api": "https://api.terraform.org",
+    "health_endpoint": "https://terraform.org/health",
+    "commands": {
+        "publish": "terraform publish",
+        "info": "terraform info {package}",
+        "versions": "terraform versions {package}",
+        "install": "terraform install",
+        "build": "terraform build",
+        "test": "terraform test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "TERRAFORM_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["terraform install", "terraform test", "terraform build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

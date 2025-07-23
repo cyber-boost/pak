@@ -1,0 +1,29 @@
+{
+    "name": "ansible",
+    "type": "infrastructure",
+    "language": "yaml",
+    "registry": "https://ansible.org",
+    "api": "https://api.ansible.org",
+    "health_endpoint": "https://ansible.org/health",
+    "commands": {
+        "publish": "ansible publish",
+        "info": "ansible info {package}",
+        "versions": "ansible versions {package}",
+        "install": "ansible install",
+        "build": "ansible build",
+        "test": "ansible test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "ANSIBLE_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["ansible install", "ansible test", "ansible build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "name": "chartmuseum",
+    "type": "kubernetes",
+    "language": "yaml",
+    "registry": "https://chartmuseum.org",
+    "api": "https://api.chartmuseum.org",
+    "health_endpoint": "https://chartmuseum.org/health",
+    "commands": {
+        "publish": "chartmuseum publish",
+        "info": "chartmuseum info {package}",
+        "versions": "chartmuseum versions {package}",
+        "install": "chartmuseum install",
+        "build": "chartmuseum build",
+        "test": "chartmuseum test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "CHARTMUSEUM_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["chartmuseum install", "chartmuseum test", "chartmuseum build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

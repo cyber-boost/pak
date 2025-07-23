@@ -1,0 +1,35 @@
+{
+    "name": "jsr",
+    "type": "javascript",
+    "language": "typescript",
+    "registry": "https://jsr.io",
+    "api": "https://jsr.io/api",
+    "health_endpoint": "https://jsr.io/api/health",
+    "commands": {
+        "publish": "jsr publish",
+        "info": "jsr info {package}",
+        "versions": "jsr info {package} --versions",
+        "install": "jsr install",
+        "build": "deno run --allow-all build.ts",
+        "test": "deno test"
+    },
+    "files": {
+        "required": ["deno.json", "mod.ts"],
+        "optional": ["README.md", "LICENSE", "deps.ts"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "JSR_TOKEN",
+        "config_key": "jsr_token"
+    },
+    "version_management": {
+        "file": "deno.json",
+        "field": "version",
+        "update_command": "deno run --allow-all scripts/update-version.ts {version}"
+    },
+    "deployment": {
+        "pre_hooks": ["deno install", "deno test", "deno run --allow-all build.ts"],
+        "publish_flags": [],
+        "rollback_support": true
+    }
+}

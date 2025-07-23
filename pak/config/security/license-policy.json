@@ -1,0 +1,32 @@
+{
+  "name": "License Compliance Policy",
+  "version": "1.0",
+  "description": "Policy for license compliance and compatibility",
+  "allowed_licenses": [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "ISC",
+    "CC0-1.0",
+    "Unlicense",
+    "WTFPL"
+  ],
+  "restricted_licenses": [
+    "GPL-2.0",
+    "GPL-3.0",
+    "AGPL-3.0",
+    "LGPL-2.1",
+    "LGPL-3.0"
+  ],
+  "forbidden_licenses": [
+    "Proprietary",
+    "Commercial"
+  ],
+  "compatibility_matrix": {
+    "MIT": ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"],
+    "Apache-2.0": ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"],
+    "BSD-3-Clause": ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"],
+    "GPL-3.0": ["GPL-3.0", "LGPL-3.0"]
+  }
+}

@@ -1,0 +1,44 @@
+{
+    "pipelines": {
+        "standard": {
+            "name": "Standard Deployment",
+            "description": "Standard deployment pipeline with pre/post hooks",
+            "stages": [
+                "validation",
+                "pre_deploy",
+                "deploy",
+                "post_deploy",
+                "verification"
+            ],
+            "parallel_deployment": false,
+            "rollback_on_failure": true
+        },
+        "parallel": {
+            "name": "Parallel Deployment",
+            "description": "Deploy to multiple platforms in parallel",
+            "stages": [
+                "validation",
+                "pre_deploy",
+                "parallel_deploy",
+                "post_deploy",
+                "verification"
+            ],
+            "parallel_deployment": true,
+            "max_parallel": 5,
+            "rollback_on_failure": true
+        },
+        "staged": {
+            "name": "Staged Deployment",
+            "description": "Deploy to staging then production",
+            "stages": [
+                "validation",
+                "staging_deploy",
+                "staging_verification",
+                "production_deploy",
+                "production_verification"
+            ],
+            "parallel_deployment": false,
+            "rollback_on_failure": true
+        }
+    }
+}

@@ -1,0 +1,41 @@
+<svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="premiumBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5E9CEA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4A8FE7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3D7FDB;stop-opacity:1" />
+    </linearGradient>
+    <filter id="perfectShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.08"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.6"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect x="0" y="0" width="500" height="120" rx="16" ry="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#perfectShadow)"/>
+  
+  <!-- Icon -->
+  <rect x="30" y="30" width="60" height="60" rx="12" ry="12" fill="url(#premiumBlue)"/>
+  <text x="60" y="68" style="font-family: -apple-system, sans-serif; font-size: 32px; font-weight: 700; fill: white; text-anchor: middle;">P</text>
+  
+  <!-- Text -->
+  <text x="120" y="55" style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 42px; font-weight: 600;">
+    <tspan fill="#1E293B">pak</tspan>
+    <tspan fill="#64748B" style="font-family: 'SF Mono', monospace; font-weight: 400;">.sh</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="120" y="80" style="font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 400; fill: #94A3B8; letter-spacing: 0.5px;">PACKAGE AUTOMATION KIT</text>
+  
+  <!-- Command preview -->
+  <rect x="350" y="45" width="120" height="30" rx="6" ry="6" fill="#F8FAFC"/>
+  <text x="360" y="64" style="font-family: 'SF Mono', monospace; font-size: 13px; fill: #64748B;">$ pak deploy</text>
+</svg> 

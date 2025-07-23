@@ -1,0 +1,25 @@
+{
+    "name": "conda",
+    "type": "python",
+    "language": "python",
+    "registry": "https://anaconda.org",
+    "api": "https://api.anaconda.org/package/{package}",
+    "health_endpoint": "https://api.anaconda.org/health",
+    "commands": {
+        "publish": "anaconda upload dist/*",
+        "info": "conda search {package}",
+        "versions": "conda search {package} --info",
+        "install": "conda install {package}",
+        "build": "conda build .",
+        "test": "conda build --test ."
+    },
+    "files": {
+        "required": ["meta.yaml", "build.sh"],
+        "optional": ["README.md", "LICENSE", "recipe/"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "ANACONDA_TOKEN",
+        "config_key": "anaconda_token"
+    }
+}

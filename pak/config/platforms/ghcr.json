@@ -1,0 +1,29 @@
+{
+    "name": "ghcr",
+    "type": "container",
+    "language": "docker",
+    "registry": "https://ghcr.org",
+    "api": "https://api.ghcr.org",
+    "health_endpoint": "https://ghcr.org/health",
+    "commands": {
+        "publish": "ghcr publish",
+        "info": "ghcr info {package}",
+        "versions": "ghcr versions {package}",
+        "install": "ghcr install",
+        "build": "ghcr build",
+        "test": "ghcr test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "GHCR_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["ghcr install", "ghcr test", "ghcr build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

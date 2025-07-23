@@ -1,0 +1,29 @@
+{
+    "name": "unpkg",
+    "type": "javascript",
+    "language": "javascript",
+    "registry": "https://unpkg.org",
+    "api": "https://api.unpkg.org",
+    "health_endpoint": "https://unpkg.org/health",
+    "commands": {
+        "publish": "unpkg publish",
+        "info": "unpkg info {package}",
+        "versions": "unpkg versions {package}",
+        "install": "unpkg install",
+        "build": "unpkg build",
+        "test": "unpkg test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "UNPKG_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["unpkg install", "unpkg test", "unpkg build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

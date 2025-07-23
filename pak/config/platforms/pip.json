@@ -1,0 +1,29 @@
+{
+    "name": "pip",
+    "type": "python",
+    "language": "python",
+    "registry": "https://pip.org",
+    "api": "https://api.pip.org",
+    "health_endpoint": "https://pip.org/health",
+    "commands": {
+        "publish": "pip publish",
+        "info": "pip info {package}",
+        "versions": "pip versions {package}",
+        "install": "pip install",
+        "build": "pip build",
+        "test": "pip test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "PIP_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["pip install", "pip test", "pip build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

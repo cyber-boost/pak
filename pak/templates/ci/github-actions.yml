@@ -1,0 +1,147 @@
+name: PAK CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  RUST_VERSION: '1.70'
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Setup Python
+        if: hashFiles('requirements.txt') != '' || hashFiles('setup.py') != ''
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Setup Rust
+        if: hashFiles('Cargo.toml') != ''
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then npm ci; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f Cargo.toml ]; then cargo build; fi
+          
+      - name: Run tests
+        run: |
+          if [ -f package.json ] && npm run test; then npm test; fi
+          if [ -f pytest.ini ] || [ -f pyproject.toml ]; then pytest; fi
+          if [ -f Cargo.toml ]; then cargo test; fi
+          
+      - name: Run security scan
+        run: |
+          if command -v pak; then
+            pak scan . --platform all
+          fi
+
+  build:
+    name: Build Package
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup build environment
+        run: |
+          curl -sSL https://pak.sh/install | bash
+          echo "$HOME/.pak/bin" >> $GITHUB_PATH
+          
+      - name: Build package
+        run: pak build . --version ${{ github.event.release.tag_name }}
+        
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: package-artifacts
+          path: dist/
+
+  deploy:
+    name: Deploy Package
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: package-artifacts
+          path: dist/
+          
+      - name: Setup deployment
+        run: |
+          curl -sSL https://pak.sh/install | bash
+          echo "$HOME/.pak/bin" >> $GITHUB_PATH
+          
+      - name: Deploy to NPM
+        if: hashFiles('package.json') != ''
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pak deploy . --platform npm --version ${{ github.event.release.tag_name }}
+        
+      - name: Deploy to PyPI
+        if: hashFiles('setup.py') != '' || hashFiles('pyproject.toml') != ''
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: pak deploy . --platform pypi --version ${{ github.event.release.tag_name }}
+        
+      - name: Deploy to Cargo
+        if: hashFiles('Cargo.toml') != ''
+        env:
+          CARGO_TOKEN: ${{ secrets.CARGO_TOKEN }}
+        run: pak deploy . --platform cargo --version ${{ github.event.release.tag_name }}
+
+  notify:
+    name: Notify Team
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify Slack
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          
+      - name: Notify Discord
+        if: success()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: success

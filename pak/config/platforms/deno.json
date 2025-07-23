@@ -1,0 +1,29 @@
+{
+    "name": "deno",
+    "type": "javascript",
+    "language": "typescript",
+    "registry": "https://deno.org",
+    "api": "https://api.deno.org",
+    "health_endpoint": "https://deno.org/health",
+    "commands": {
+        "publish": "deno publish",
+        "info": "deno info {package}",
+        "versions": "deno versions {package}",
+        "install": "deno install",
+        "build": "deno build",
+        "test": "deno test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "DENO_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["deno install", "deno test", "deno build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

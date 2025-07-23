@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}PAK.sh - Admin Users{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Admin User Management</h1>
+    <p>Manage users and view system statistics for your PAK.sh installation.</p>
+    
+    <div class="grid" style="margin-top: 2rem;">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_users|default(0) }}</div>
+            <div class="stats-label">Total Users</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.active_users|default(0) }}</div>
+            <div class="stats-label">Active Users (30 days)</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.active_sessions|default(0) }}</div>
+            <div class="stats-label">Active Sessions</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.failed_attempts_today|default(0) }}</div>
+            <div class="stats-label">Failed Logins Today</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Create Admin User</h2>
+    <form method="POST">
+        <input type="hidden" name="action" value="create_admin">
+        
+        <div class="form-group">
+            <label class="form-label">Admin Password (to access this interface)</label>
+            <input type="password" name="admin_password" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">User Name</label>
+            <input type="text" name="name" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-input" required minlength="8">
+        </div>
+        
+        <button type="submit" class="btn">Create Admin User</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Create Regular User</h2>
+    <form method="POST">
+        <input type="hidden" name="action" value="create_user">
+        
+        <div class="form-group">
+            <label class="form-label">Admin Password (to access this interface)</label>
+            <input type="password" name="admin_password" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">User Name</label>
+            <input type="text" name="name" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-input" required minlength="8">
+        </div>
+        
+        <button type="submit" class="btn">Create User</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Security Notice</h2>
+    <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 1rem; border-radius: 6px; color: #FFC107;">
+        <strong>⚠️ Security Notice:</strong> This admin interface should be protected in production. 
+        Consider adding IP restrictions or additional authentication layers.
+    </div>
+</div>
+{% endblock %} 

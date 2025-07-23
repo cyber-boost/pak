@@ -1,0 +1,29 @@
+{
+    "name": "gradle_android",
+    "type": "mobile",
+    "language": "java",
+    "registry": "https://gradle_android.org",
+    "api": "https://api.gradle_android.org",
+    "health_endpoint": "https://gradle_android.org/health",
+    "commands": {
+        "publish": "gradle_android publish",
+        "info": "gradle_android info {package}",
+        "versions": "gradle_android versions {package}",
+        "install": "gradle_android install",
+        "build": "gradle_android build",
+        "test": "gradle_android test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "GRADLE_ANDROID_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["gradle_android install", "gradle_android test", "gradle_android build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

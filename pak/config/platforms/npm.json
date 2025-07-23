@@ -1,0 +1,39 @@
+{
+    "name": "npm",
+    "type": "javascript",
+    "language": "javascript",
+    "registry": "https://registry.npmjs.org",
+    "api": "https://api.npmjs.org",
+    "health_endpoint": "https://registry.npmjs.org/-/ping",
+    "commands": {
+        "publish": "npm publish",
+        "info": "npm view {package}",
+        "versions": "npm view {package} versions",
+        "install": "npm install",
+        "build": "npm run build",
+        "test": "npm test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE", ".npmignore", "tsconfig.json"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "NPM_TOKEN",
+        "config_key": "//registry.npmjs.org/:_authToken"
+    },
+    "version_management": {
+        "file": "package.json",
+        "field": "version",
+        "update_command": "npm version {version} --no-git-tag-version"
+    },
+    "deployment": {
+        "pre_hooks": ["npm install", "npm test", "npm run build"],
+        "publish_flags": ["--access", "public"],
+        "rollback_support": true
+    },
+    "monitoring": {
+        "download_stats": "https://api.npmjs.org/downloads/point/last-month/{package}",
+        "version_stats": "https://api.npmjs.org/downloads/range/last-week/{package}"
+    }
+}

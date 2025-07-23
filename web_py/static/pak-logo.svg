@@ -1,0 +1,129 @@
+<svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient definitions -->
+  <defs>
+    <!-- Main gradient -->
+    <linearGradient id="pakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Accent gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00BCD4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0097A7;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Terminal gradient -->
+    <linearGradient id="terminalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#37474F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#263238;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.2"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Icon Section -->
+  <g id="icon">
+    <!-- Main package box -->
+    <rect x="50" y="80" width="120" height="120" rx="12" ry="12" 
+          fill="url(#pakGradient)" filter="url(#shadow)"/>
+    
+    <!-- Package tape/seal -->
+    <rect x="50" y="130" width="120" height="20" 
+          fill="url(#accentGradient)" opacity="0.8"/>
+    
+    <!-- Package flaps (3D effect) -->
+    <path d="M50 92 L110 92 L110 80 L170 80 L170 92 L110 92" 
+          fill="#1976D2" opacity="0.6"/>
+    
+    <!-- Automation arrows -->
+    <g id="arrows">
+      <!-- Right arrow -->
+      <path d="M180 140 L200 140 L195 130 Z" fill="#00BCD4" opacity="0.8"/>
+      <rect x="185" y="137" width="20" height="6" fill="#00BCD4" opacity="0.8"/>
+      
+      <!-- Bottom arrow -->
+      <path d="M110 210 L110 230 L120 225 Z" fill="#00BCD4" opacity="0.8"/>
+      <rect x="107" y="200" width="6" height="20" fill="#00BCD4" opacity="0.8"/>
+      
+      <!-- Left arrow (smaller) -->
+      <path d="M40 140 L20 140 L25 150 Z" fill="#00BCD4" opacity="0.6"/>
+      <rect x="25" y="137" width="15" height="6" fill="#00BCD4" opacity="0.6"/>
+    </g>
+    
+    <!-- Platform dots -->
+    <circle cx="30" cy="100" r="5" fill="#4CAF50"/>
+    <circle cx="30" cy="120" r="5" fill="#FF9800"/>
+    <circle cx="30" cy="140" r="5" fill="#F44336"/>
+    <circle cx="190" cy="100" r="5" fill="#9C27B0"/>
+    <circle cx="190" cy="120" r="5" fill="#00BCD4"/>
+    <circle cx="190" cy="140" r="5" fill="#FFC107"/>
+  </g>
+  
+  <!-- Text Section -->
+  <g id="text">
+    <!-- "pak" text -->
+    <text x="250" y="160" font-family="Arial, sans-serif" font-size="90" 
+          font-weight="bold" fill="url(#pakGradient)">pak</text>
+    
+    <!-- ".sh" terminal style -->
+    <g id="terminal">
+      <rect x="470" y="100" width="120" height="70" rx="8" ry="8" 
+            fill="url(#terminalGradient)" filter="url(#shadow)"/>
+      
+      <!-- Terminal prompt -->
+      <text x="485" y="130" font-family="'Courier New', monospace" 
+            font-size="20" fill="#4CAF50" font-weight="bold">$</text>
+      
+      <!-- .sh text -->
+      <text x="505" y="150" font-family="'Courier New', monospace" 
+            font-size="32" fill="#FFFFFF" font-weight="normal">.sh</text>
+    </g>
+    
+    <!-- Tagline -->
+    <text x="255" y="210" font-family="Arial, sans-serif" font-size="18" 
+          fill="#607D8B" letter-spacing="2">PACKAGE AUTOMATION KIT</text>
+  </g>
+  
+  <!-- Decorative elements -->
+  <g id="decorations" opacity="0.3">
+    <!-- Background grid pattern -->
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="1" height="40" fill="#E0E0E0"/>
+      <rect x="0" y="0" width="40" height="1" fill="#E0E0E0"/>
+    </pattern>
+    <rect x="0" y="0" width="800" height="300" fill="url(#grid)" opacity="0.5"/>
+  </g>
+  
+  <!-- Icon-only version (for small sizes) -->
+  <g id="icon-only" transform="translate(650, 50) scale(0.6)">
+    <rect x="50" y="80" width="120" height="120" rx="12" ry="12" 
+          fill="url(#pakGradient)" filter="url(#shadow)"/>
+    <rect x="50" y="130" width="120" height="20" 
+          fill="url(#accentGradient)" opacity="0.8"/>
+    <path d="M50 92 L110 92 L110 80 L170 80 L170 92 L110 92" 
+          fill="#1976D2" opacity="0.6"/>
+    <text x="110" y="145" font-family="Arial, sans-serif" font-size="36" 
+          font-weight="bold" fill="white" text-anchor="middle">P</text>
+  </g>
+  
+  <!-- Mini terminal icon -->
+  <g id="mini-terminal" transform="translate(670, 180) scale(0.4)">
+    <rect x="0" y="0" width="120" height="70" rx="8" ry="8" 
+          fill="url(#terminalGradient)"/>
+    <text x="15" y="30" font-family="'Courier New', monospace" 
+          font-size="20" fill="#4CAF50" font-weight="bold">$</text>
+    <text x="35" y="50" font-family="'Courier New', monospace" 
+          font-size="32" fill="#FFFFFF">.sh</text>
+  </g>
+</svg> 

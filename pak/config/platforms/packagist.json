@@ -1,0 +1,29 @@
+{
+    "name": "packagist",
+    "type": "php",
+    "language": "php",
+    "registry": "https://packagist.org",
+    "api": "https://api.packagist.org",
+    "health_endpoint": "https://packagist.org/health",
+    "commands": {
+        "publish": "packagist publish",
+        "info": "packagist info {package}",
+        "versions": "packagist versions {package}",
+        "install": "packagist install",
+        "build": "packagist build",
+        "test": "packagist test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "PACKAGIST_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["packagist install", "packagist test", "packagist build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

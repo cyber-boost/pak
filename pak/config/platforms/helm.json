@@ -1,0 +1,29 @@
+{
+    "name": "helm",
+    "type": "kubernetes",
+    "language": "yaml",
+    "registry": "https://helm.org",
+    "api": "https://api.helm.org",
+    "health_endpoint": "https://helm.org/health",
+    "commands": {
+        "publish": "helm publish",
+        "info": "helm info {package}",
+        "versions": "helm versions {package}",
+        "install": "helm install",
+        "build": "helm build",
+        "test": "helm test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "HELM_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["helm install", "helm test", "helm build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}

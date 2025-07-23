@@ -1,0 +1,29 @@
+{
+    "name": "rubygems",
+    "type": "ruby",
+    "language": "ruby",
+    "registry": "https://rubygems.org",
+    "api": "https://api.rubygems.org",
+    "health_endpoint": "https://rubygems.org/health",
+    "commands": {
+        "publish": "rubygems publish",
+        "info": "rubygems info {package}",
+        "versions": "rubygems versions {package}",
+        "install": "rubygems install",
+        "build": "rubygems build",
+        "test": "rubygems test"
+    },
+    "files": {
+        "required": ["package.json"],
+        "optional": ["README.md", "LICENSE"]
+    },
+    "authentication": {
+        "type": "token",
+        "env_var": "RUBYGEMS_TOKEN"
+    },
+    "deployment": {
+        "pre_hooks": ["rubygems install", "rubygems test", "rubygems build"],
+        "publish_flags": [],
+        "rollback_support": false
+    }
+}
