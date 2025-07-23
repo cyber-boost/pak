@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Logo -->
-<img src="https://pak.sh/assets/pak-main-logo.svg" alt="PAK.sh Logo" width="400">
+<img src="https://raw.githubusercontent.com/cyber-boost/pak/main/assets/pak-main-logo.svg" alt="PAK.sh Logo" width="400">
 
 # PAK.sh - Universal Package Automation Kit
 
@@ -668,7 +668,7 @@ export PAK_TIMEOUT="300"
 
 <br>
 
-<img src="https://pak.sh/assets/pak-terminal-style.svg" alt="PAK.sh Demo" width="600">
+<img src="https://raw.githubusercontent.com/cyber-boost/pak/main/assets/pak-terminal-style.svg" alt="PAK.sh Demo" width="600">
 
 <br>
 <br>
