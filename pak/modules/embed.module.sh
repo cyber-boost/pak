@@ -14,7 +14,8 @@ declare -A EMBED_TELEMETRY_DATA
 EMBED_VERSION="$EMBED_MODULE_VERSION"
 EMBED_CONFIG_FILE=".pak-embed.conf"
 EMBED_DATA_DIR="${HOME}/.pak-embed"
-EMBED_LOG_FILE="${EMBED_DATA_DIR}/telemetry.log"
+EMBED_LOGS_DIR="${EMBED_DATA_DIR}/logs"
+EMBED_LOG_FILE="${EMBED_LOGS_DIR}/telemetry.log"
 EMBED_SQLITE_DB="${EMBED_DATA_DIR}/telemetry.db"
 
 # Default webhook URL (can be overridden in config)
@@ -146,11 +147,20 @@ CREATE TABLE IF NOT EXISTS package_installs (
     error_message TEXT
 );
 
+CREATE TABLE IF NOT EXISTS health_status (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    status_type TEXT NOT NULL,
+    status_value TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    module TEXT DEFAULT 'embed'
+);
+
 CREATE INDEX IF NOT EXISTS idx_telemetry_events_type ON telemetry_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_telemetry_events_package ON telemetry_events(package_name);
 CREATE INDEX IF NOT EXISTS idx_telemetry_events_timestamp ON telemetry_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_session ON user_sessions(session_id);
 CREATE INDEX IF NOT EXISTS idx_package_installs_package ON package_installs(package_name);
+CREATE INDEX IF NOT EXISTS idx_health_status_type ON health_status(status_type);
 EOF
     
     log_info "SQLite database created: $EMBED_SQLITE_DB"
@@ -601,6 +611,40 @@ embed_show_help() {
     echo "  pak embed track event user_login '{\"user_id\":\"123\"}'"
     echo "  pak embed analytics stats"
     echo "  pak embed report status"
+}
+
+# Directory validation for embed module
+embed_validate_directories() {
+    local required_dirs=("$EMBED_DATA_DIR" "$EMBED_LOGS_DIR" "$(dirname "$EMBED_SQLITE_DB")")
+    
+    for dir in "${required_dirs[@]}"; do
+        if [[ ! -d "$dir" ]]; then
+            log WARN "Creating missing embed directory: $dir"
+            mkdir -p "$dir"
+        fi
+    done
+}
+
+# Health status update for embed module
+embed_update_health_status() {
+    local status_type="$1"
+    local status_value="$2"
+    local timestamp=$(date +%s)
+    
+    # Update health status in memory
+    EMBED_HEALTH_STATUS["$status_type"]="$status_value"
+    EMBED_HEALTH_STATUS["${status_type}_timestamp"]="$timestamp"
+    
+    # Log the status update
+    log DEBUG "Embed health status updated: $status_type = $status_value"
+    
+    # Store in SQLite if available
+    if [[ -f "$EMBED_SQLITE_DB" ]]; then
+        sqlite3 "$EMBED_SQLITE_DB" << EOF
+INSERT OR REPLACE INTO health_status (status_type, status_value, timestamp) 
+VALUES ('$status_type', '$status_value', '$timestamp');
+EOF
+    fi
 }
 
 # Main function - initialize and track session start (legacy)

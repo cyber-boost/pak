@@ -1,0 +1,23 @@
+{
+  "id": "1753361859",
+  "package": "pak-sh",
+  "version": "3.0.0",
+  "pipeline": "standard",
+  "started_at": "2025-07-24T12:57:39Z",
+  "status": "completed",
+  "platforms": {},
+  "logs": [
+    {
+      "stage": "validation",
+      "status": "started",
+      "timestamp": "2025-07-24T12:57:39Z"
+    },
+    {
+      "stage": "validation",
+      "status": "failed",
+      "timestamp": "2025-07-24T12:57:39Z"
+    }
+  ],
+  "errors": [],
+  "completed_at": "2025-07-24T12:57:39Z"
+}

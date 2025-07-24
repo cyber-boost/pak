@@ -23,7 +23,7 @@ def get_version():
             for line in f:
                 if 'PAK_VERSION=' in line:
                     return line.split('=')[1].strip().strip('"')
-    return "2.0.0"
+    return "3.0.0"
 
 setup(
     name="pak-sh",

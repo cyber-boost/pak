@@ -1,11 +1,11 @@
 {
   "name": "pak-sh",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "PAK.sh - Universal Package Automation Kit",
   "main": "pak-sh",
   "bin": {
-    "pak-sh": "./pak-sh",
-    "pak": "./pak-sh"
+    "pak-sh": "pak-sh",
+    "pak": "pak-sh"
   },
   "scripts": {
     "install": "chmod +x pak-sh",
@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cyber-boost/pak.git"
+    "url": "git+https://github.com/cyber-boost/pak.git"
   },
   "homepage": "https://pak.sh",
   "bugs": {
@@ -58,4 +58,4 @@
   "publishConfig": {
     "access": "public"
   }
-} 
+}

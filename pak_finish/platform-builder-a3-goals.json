@@ -1,0 +1,186 @@
+{
+  "agent": "platform-builder",
+  "id": "a3",
+  "goals": [
+    {
+      "id": "a3-g1",
+      "title": "Implement core deployment commands",
+      "description": "Build the main deployment commands that orchestrate multi-platform releases",
+      "commands": {
+        "pak deploy": "Deploy to all configured platforms",
+        "pak build": "Build packages for all platforms",
+        "pak test": "Run tests before deployment",
+        "pak rollback": "Rollback failed deployments",
+        "pak release": "Create a new release across platforms"
+      },
+      "acceptance_criteria": [
+        "Parallel deployment to multiple platforms",
+        "Continues on failure with clear reporting",
+        "Dry-run mode for all commands",
+        "Progress tracking for long operations"
+      ]
+    },
+    {
+      "id": "a3-g2",
+      "title": "Build platform adapters for JavaScript ecosystem",
+      "description": "Create adapters for npm, yarn, pnpm, and jspm",
+      "platforms": [
+        {
+          "name": "npm",
+          "features": ["publish", "unpublish", "dist-tags", "access control"]
+        },
+        {
+          "name": "yarn",
+          "features": ["berry support", "workspace publishing"]
+        },
+        {
+          "name": "jspm",
+          "features": ["ES modules", "import maps"]
+        }
+      ],
+      "acceptance_criteria": [
+        "Handle 2FA authentication",
+        "Support scoped packages",
+        "Workspace/monorepo support",
+        "Package provenance"
+      ]
+    },
+    {
+      "id": "a3-g3",
+      "title": "Build platform adapters for Python ecosystem",
+      "description": "Create adapters for PyPI, conda, poetry",
+      "platforms": [
+        {
+          "name": "pypi",
+          "features": ["wheel building", "source distributions", "metadata 2.1"]
+        },
+        {
+          "name": "conda",
+          "features": ["conda-forge", "channels", "environments"]
+        },
+        {
+          "name": "poetry",
+          "features": ["dependency groups", "private repos"]
+        }
+      ],
+      "acceptance_criteria": [
+        "Build wheels for multiple Python versions",
+        "Handle binary dependencies",
+        "Support API tokens and keyring",
+        "Conda recipe generation"
+      ]
+    },
+    {
+      "id": "a3-g4",
+      "title": "Build platform adapters for compiled languages",
+      "description": "Create adapters for Cargo, Maven, NuGet, Go modules",
+      "platforms": [
+        {
+          "name": "cargo",
+          "features": ["crates.io publishing", "cargo-release integration"]
+        },
+        {
+          "name": "maven",
+          "features": ["Maven Central", "GPG signing", "OSSRH"]
+        },
+        {
+          "name": "nuget",
+          "features": ["nuget.org", "symbols", "signed packages"]
+        },
+        {
+          "name": "go",
+          "features": ["proxy.golang.org", "module versioning"]
+        }
+      ],
+      "acceptance_criteria": [
+        "Cross-compilation support",
+        "Artifact signing",
+        "Symbol/debug package uploads",
+        "License validation"
+      ]
+    },
+    {
+      "id": "a3-g5",
+      "title": "Build container and OS package adapters",
+      "description": "Create adapters for Docker Hub, Helm, Homebrew, Snap",
+      "platforms": [
+        {
+          "name": "docker",
+          "features": ["multi-arch builds", "layer caching", "signatures"]
+        },
+        {
+          "name": "helm",
+          "features": ["chart publishing", "chart testing", "OCI support"]
+        },
+        {
+          "name": "homebrew",
+          "features": ["formula generation", "bottles", "taps"]
+        },
+        {
+          "name": "snap",
+          "features": ["snap store", "channels", "confinement"]
+        }
+      ],
+      "acceptance_criteria": [
+        "Multi-architecture support",
+        "Automated testing before publish",
+        "Security scanning integration",
+        "Version compatibility checks"
+      ]
+    },
+    {
+      "id": "a3-g6",
+      "title": "Create unified build system",
+      "description": "Build system that generates packages for all platforms from single source",
+      "features": [
+        "Auto-detect project type and platforms",
+        "Generate platform-specific metadata",
+        "Cross-platform build orchestration",
+        "Build artifact caching",
+        "Reproducible builds"
+      ],
+      "acceptance_criteria": [
+        "Single command builds all packages",
+        "Incremental builds supported",
+        "Build matrix for versions/platforms",
+        "Build provenance/SBOM generation"
+      ]
+    },
+    {
+      "id": "a3-g7",
+      "title": "Implement deployment validation and testing",
+      "description": "Pre-deployment checks and post-deployment verification",
+      "validations": [
+        "License compatibility checks",
+        "Dependency resolution validation",
+        "Version conflict detection",
+        "Package integrity verification",
+        "Platform-specific requirement checks"
+      ],
+      "acceptance_criteria": [
+        "Catches issues before deployment",
+        "Platform-specific test suites",
+        "Automated rollback triggers",
+        "Deployment health monitoring"
+      ]
+    },
+    {
+      "id": "a3-g8",
+      "title": "Build rollback and recovery system",
+      "description": "Implement safe rollback for failed deployments",
+      "features": [
+        "Deployment transaction tracking",
+        "Platform-specific rollback procedures",
+        "Partial deployment recovery",
+        "State reconciliation",
+        "Rollback automation"
+      ],
+      "acceptance_criteria": [
+        "Rollback completes in under 5 minutes",
+        "No data loss during rollback",
+        "Clear rollback status reporting",
+        "Automatic rollback on critical failures"
+      ]
+    }
+  ]
+}

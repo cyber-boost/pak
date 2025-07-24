@@ -1,0 +1,128 @@
+{
+  "agent": "package-manager",
+  "id": "a2",
+  "goals": [
+    {
+      "id": "a2-g1",
+      "title": "Implement package discovery system",
+      "description": "Create intelligent package discovery that finds existing packages across platforms",
+      "features": [
+        "GitHub repository scanner for package files",
+        "Auto-detect package.json, setup.py, Cargo.toml, pom.xml, etc.",
+        "Extract package names and current versions",
+        "Map packages to their respective platforms"
+      ],
+      "acceptance_criteria": [
+        "Discovers packages in nested directories",
+        "Handles monorepos correctly",
+        "Identifies platform from package files",
+        "Works offline with local repos"
+      ]
+    },
+    {
+      "id": "a2-g2",
+      "title": "Build bulk import command",
+      "description": "Create 'pak import' command for importing existing packages",
+      "commands": [
+        "pak import --scan-github [username]",
+        "pak import --scan-local [directory]",
+        "pak import --from-list [file]",
+        "pak import --platform npm --user [username]"
+      ],
+      "acceptance_criteria": [
+        "Imports packages from GitHub repos via API",
+        "Shows preview before importing",
+        "Handles API rate limits gracefully",
+        "Supports dry-run mode",
+        "Progress bar for bulk operations"
+      ]
+    },
+    {
+      "id": "a2-g3",
+      "title": "Implement historical data import",
+      "description": "Pull existing download stats and metadata from platform APIs",
+      "data_sources": [
+        "npm registry API for download counts",
+        "PyPI stats API for package statistics",
+        "crates.io API for Rust packages",
+        "Platform-specific analytics APIs"
+      ],
+      "acceptance_criteria": [
+        "Imports last 30 days of stats minimum",
+        "Handles missing historical data gracefully",
+        "Stores data in efficient format",
+        "Supports incremental updates"
+      ]
+    },
+    {
+      "id": "a2-g4",
+      "title": "Create ownership verification system",
+      "description": "Verify users own packages before allowing import/management",
+      "verification_methods": [
+        "Platform API authentication check",
+        "Package metadata author matching",
+        "Email verification for package authors",
+        "npm/PyPI ownership APIs"
+      ],
+      "acceptance_criteria": [
+        "Prevents unauthorized package imports",
+        "Clear messaging about ownership requirements",
+        "Supports team/org owned packages",
+        "Caches verification results"
+      ]
+    },
+    {
+      "id": "a2-g5",
+      "title": "Implement core package management commands",
+      "description": "Build essential commands for package lifecycle management",
+      "commands": {
+        "pak init": "Initialize PAK in current directory, detect package type",
+        "pak track [package]": "Add package to tracking system",
+        "pak untrack [package]": "Remove package from tracking",
+        "pak list": "Show all tracked packages with status",
+        "pak status": "Detailed status of all packages",
+        "pak info [package]": "Show detailed package information"
+      },
+      "acceptance_criteria": [
+        "Commands work across all platforms",
+        "Consistent output format",
+        "Support for filtering and sorting",
+        "JSON output mode for scripting"
+      ]
+    },
+    {
+      "id": "a2-g6",
+      "title": "Build package configuration system",
+      "description": "Create per-package configuration for deployment settings",
+      "features": [
+        ".pakrc file format for package settings",
+        "Platform-specific deployment configs",
+        "Environment-based settings (dev/staging/prod)",
+        "Inheritance from global config"
+      ],
+      "acceptance_criteria": [
+        "Configuration validation on load",
+        "Clear error messages for misconfigurations",
+        "Migration tool for config updates",
+        "Documentation for all options"
+      ]
+    },
+    {
+      "id": "a2-g7",
+      "title": "Create package relationship mapping",
+      "description": "Track relationships between packages across platforms",
+      "relationships": [
+        "Same package on multiple platforms",
+        "Monorepo package relationships",
+        "Dependency relationships",
+        "Fork/upstream relationships"
+      ],
+      "acceptance_criteria": [
+        "Automatically detects related packages",
+        "Visualize package relationships",
+        "Bulk operations on related packages",
+        "Maintains relationship integrity"
+      ]
+    }
+  ]
+}

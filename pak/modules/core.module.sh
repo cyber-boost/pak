@@ -845,15 +845,15 @@ core_health_check() {
 }
 
 # Version information loading
-#core_load_version_info() {
-##    CORE_VERSION_INFO["core"]="${CORE_MODULE_VERSION:-1.0.0}"
-#    CORE_VERSION_INFO["bash"]="$BASH_VERSION"
-#    CORE_VERSION_INFO["system"]="$(uname -s) $(uname -r)"
-#    CORE_VERSION_INFO["architecture"]="$(uname -m)"
-#}
-#
-## Directory validation
-#core_validate_directories() {
+core_load_version_info() {
+    CORE_VERSION_INFO["core"]="${CORE_MODULE_VERSION:-1.0.0}"
+    CORE_VERSION_INFO["bash"]="$BASH_VERSION"
+    CORE_VERSION_INFO["system"]="$(uname -s) $(uname -r)"
+    CORE_VERSION_INFO["architecture"]="$(uname -m)"
+}
+
+# Directory validation
+core_validate_directories() {
     local required_dirs=("$PAK_CONFIG_DIR" "$PAK_DATA_DIR" "$PAK_LOGS_DIR" "$PAK_MODULES_DIR")
     
     for dir in "${required_dirs[@]}"; do

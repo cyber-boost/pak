@@ -15,15 +15,35 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Installation variables
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
-CONFIG_DIR="${CONFIG_DIR:-/etc/pak}"
-DATA_DIR="${DATA_DIR:-/var/lib/pak}"
-LOG_DIR="${LOG_DIR:-/var/log/pak}"
+# Installation variables - Default to user home directory
+PAK_HOME="${PAK_HOME:-$HOME/.pak}"
+INSTALL_DIR="$PAK_HOME/bin"
+CONFIG_DIR="$PAK_HOME/config"
+DATA_DIR="$PAK_HOME/data"
+LOG_DIR="$PAK_HOME/logs"
 
-# Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+# Global binary location for symlink
+GLOBAL_BIN_DIR="${GLOBAL_BIN_DIR:-/usr/local/bin}"
+
+# Base URL for downloading files (adjust as needed)
+BASE_URL="${PAK_BASE_URL:-https://pak.sh}"
+
+# Handle script directory detection for both local and curl-piped execution
+detect_script_dirs() {
+    if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "${BASH_SOURCE[0]}" ]]; then
+        # Running from a local file
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+        IS_LOCAL_INSTALL=true
+        echo -e "${CYAN}🔍 Detected: Local installation from file${NC}"
+    else
+        # Running from curl pipe or stdin
+        SCRIPT_DIR=""
+        PARENT_DIR=""
+        IS_LOCAL_INSTALL=false
+        echo -e "${CYAN}🔍 Detected: Remote installation (piped from curl)${NC}"
+    fi
+}
 
 # Detect environment
 detect_environment() {
@@ -57,18 +77,50 @@ detect_environment() {
     fi
 }
 
-# Run environment detection
+# Download file function
+download_file() {
+    local url="$1"
+    local destination="$2"
+    local description="${3:-file}"
+    
+    echo -e "${BLUE}⬇️  Downloading $description...${NC}"
+    
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$url" -o "$destination" || {
+            echo -e "${RED}❌ Failed to download $description from $url${NC}"
+            return 1
+        }
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$destination" "$url" || {
+            echo -e "${RED}❌ Failed to download $description from $url${NC}"
+            return 1
+        }
+    else
+        echo -e "${RED}❌ Neither curl nor wget found. Cannot download $description${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ Downloaded $description${NC}"
+}
+
+# Run detections
+detect_script_dirs
 detect_environment
 
 echo -e "${BLUE}🚀 Installing Enhanced Universal Package Tracker & Deployer (UPTD)...${NC}"
+echo -e "${CYAN}📍 Installing to: ${GREEN}$PAK_HOME${NC}"
 
-# Check if running as root for system-wide installation
-if [ "$EUID" -ne 0 ] && [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
-    echo -e "${YELLOW}⚠️  Installing to system directory requires root privileges${NC}"
-    echo -e "${CYAN}💡 Options:${NC}"
-    echo -e "  1. Run with sudo: ${GREEN}sudo ./install.sh${NC}"
-    echo -e "  2. Install locally: ${GREEN}INSTALL_DIR=./bin ./install.sh${NC}"
-    exit 1
+# Check if we can create global symlink (optional)
+CAN_CREATE_GLOBAL_SYMLINK=false
+if [ "$EUID" -eq 0 ]; then
+    CAN_CREATE_GLOBAL_SYMLINK=true
+    echo -e "${GREEN}✓ Running as root - will create global symlink${NC}"
+elif [ -w "$GLOBAL_BIN_DIR" ]; then
+    CAN_CREATE_GLOBAL_SYMLINK=true
+    echo -e "${GREEN}✓ Can write to $GLOBAL_BIN_DIR - will create global symlink${NC}"
+else
+    echo -e "${YELLOW}ℹ️  No root privileges - will install to user directory only${NC}"
+    echo -e "${CYAN}💡 Run with sudo to create global symlink: ${GREEN}sudo bash < <(curl -sSL get.pak.sh)${NC}"
 fi
 
 # Create installation directories
@@ -78,31 +130,199 @@ mkdir -p "$CONFIG_DIR"
 mkdir -p "$DATA_DIR"
 mkdir -p "$LOG_DIR"
 
-# Copy main PAK system
+# Install main PAK system
 echo -e "${BLUE}📦 Installing PAK system...${NC}"
-cp "$PARENT_DIR/pak/pak.sh" "$INSTALL_DIR/pak"
+if [[ "$IS_LOCAL_INSTALL" == "true" ]] && [[ -f "$PARENT_DIR/pak/pak.sh" ]]; then
+    # Local installation - copy from repository
+    cp "$PARENT_DIR/pak/pak.sh" "$INSTALL_DIR/pak"
+    echo -e "${GREEN}✅ Copied pak.sh from local repository${NC}"
+else
+    # Remote installation - download complete system as tar.gz
+    TEMP_DIR=$(mktemp -d)
+    echo -e "${BLUE}⬇️  Downloading complete PAK system...${NC}"
+    
+    # Try to download latest.tar.gz
+    alt_urls=(
+        "https://get.pak.sh/latest.tar.gz"
+        "https://pak.sh/latest.tar.gz"
+        "https://cdn.pak.sh/latest.tar.gz"
+    )
+    
+    success=false
+    for url in "${alt_urls[@]}"; do
+        echo -e "${BLUE}🔄 Trying: $url${NC}"
+        if download_file "$url" "$TEMP_DIR/latest.tar.gz" "PAK system archive"; then
+            success=true
+            break
+        fi
+    done
+    
+    if [[ "$success" == "false" ]]; then
+        echo -e "${RED}❌ Failed to download PAK system from all sources${NC}"
+        echo -e "${YELLOW}💡 Please check your internet connection or try a local installation${NC}"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    # Extract the archive
+    echo -e "${BLUE}📦 Extracting PAK system...${NC}"
+    cd "$TEMP_DIR"
+    if tar -xzf latest.tar.gz; then
+        # Find the pak.sh file in the extracted directory
+        PAK_DIR=$(find . -name "pak.sh" -type f | head -1 | xargs dirname)
+        if [[ -n "$PAK_DIR" ]] && [[ -f "$PAK_DIR/pak.sh" ]]; then
+            cp "$PAK_DIR/pak.sh" "$INSTALL_DIR/pak"
+            echo -e "${GREEN}✅ Extracted and installed pak.sh${NC}"
+            
+            # Copy additional files if they exist
+            if [[ -d "$PAK_DIR/modules" ]]; then
+                # Copy all .module.sh files to the modules directory
+                mkdir -p "$CONFIG_DIR/modules"
+                cp "$PAK_DIR/modules"/*.module.sh "$CONFIG_DIR/modules/" 2>/dev/null || true
+                echo -e "${GREEN}✅ Copied module files from archive${NC}"
+            fi
+            if [[ -d "$PAK_DIR/templates" ]]; then
+                mkdir -p "$CONFIG_DIR/templates"
+                cp -r "$PAK_DIR/templates"/* "$CONFIG_DIR/templates/" 2>/dev/null || true
+                echo -e "${GREEN}✅ Copied templates from archive${NC}"
+            fi
+            if [[ -f "$PAK_DIR/ascii-letters.sh" ]]; then
+                cp "$PAK_DIR/ascii-letters.sh" "$INSTALL_DIR/" 2>/dev/null || true
+                echo -e "${GREEN}✅ Copied ASCII functions from archive${NC}"
+            fi
+        else
+            echo -e "${RED}❌ Could not find pak.sh in the downloaded archive${NC}"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+    else
+        echo -e "${RED}❌ Failed to extract the downloaded archive${NC}"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    # Cleanup
+    rm -rf "$TEMP_DIR"
+fi
+
 chmod +x "$INSTALL_DIR/pak"
 
-# Make all shell scripts executable
-echo -e "${BLUE}🔐 Setting executable permissions...${NC}"
-find "$PARENT_DIR" -name "*.sh" -type f -exec chmod +x {} \;
-find "$PARENT_DIR" -name "*.py" -type f -exec chmod +x {} \;
-echo -e "${GREEN}✅ All shell scripts and Python files made executable${NC}"
-
-# Copy enhanced modules
+# Create enhanced modules directory and basic modules for local installations
 echo -e "${BLUE}🔧 Installing enhanced modules...${NC}"
 mkdir -p "$CONFIG_DIR/modules"
-cp -r "$PARENT_DIR/pak/modules" "$CONFIG_DIR/"
 
-# Copy configuration files
-echo -e "${BLUE}⚙️  Installing configuration files...${NC}"
-cp "$SCRIPT_DIR/platform-configs.json" "$CONFIG_DIR/"
-cp -r "$SCRIPT_DIR/templates" "$CONFIG_DIR/"
+if [[ "$IS_LOCAL_INSTALL" == "true" ]] && [[ -d "$PARENT_DIR/pak/modules" ]]; then
+    # Local installation - copy modules
+    cp "$PARENT_DIR/pak/modules"/*.module.sh "$CONFIG_DIR/modules/" 2>/dev/null || echo -e "${YELLOW}⚠️  No modules directory found in local repository${NC}"
+else
+    # Remote installation - create basic module structure if modules weren't copied from archive
+    if [[ ! -f "$CONFIG_DIR/modules/core.module.sh" ]]; then
+        echo -e "${YELLOW}ℹ️  Creating basic module structure (full modules downloaded from archive)${NC}"
+        mkdir -p "$CONFIG_DIR/modules/security"
+        mkdir -p "$CONFIG_DIR/modules/automation"
+        mkdir -p "$CONFIG_DIR/modules/devex"
+    fi
+fi
 
-# Generate deployment templates
-echo -e "${BLUE}🔨 Generating deployment templates...${NC}"
-cd "$SCRIPT_DIR"
-./deploy-templates.sh
+# Create templates directory
+echo -e "${BLUE}🔨 Creating deployment templates...${NC}"
+mkdir -p "$CONFIG_DIR/templates"
+
+if [[ "$IS_LOCAL_INSTALL" == "true" ]] && [[ -f "$SCRIPT_DIR/platform-configs.json" ]]; then
+    # Local installation - copy configuration files
+    cp "$SCRIPT_DIR/platform-configs.json" "$CONFIG_DIR/"
+    if [[ -d "$SCRIPT_DIR/templates" ]]; then
+        cp -r "$SCRIPT_DIR/templates"/* "$CONFIG_DIR/templates/" 2>/dev/null || true
+    fi
+    
+    # Run deploy-templates.sh if it exists
+    if [[ -f "$SCRIPT_DIR/deploy-templates.sh" ]]; then
+        cd "$SCRIPT_DIR"
+        ./deploy-templates.sh || echo -e "${YELLOW}⚠️  deploy-templates.sh failed, continuing...${NC}"
+    fi
+else
+    # Remote installation - embed basic platform configuration
+    cat > "$CONFIG_DIR/platform-configs.json" << 'EOF'
+{
+  "platforms": {
+    "npm": {
+      "name": "npm",
+      "language": "javascript",
+      "registry": "https://registry.npmjs.org",
+      "api_endpoint": "https://api.npmjs.org",
+      "deploy_command": "npm publish",
+      "tracking_endpoints": [
+        "https://api.npmjs.org/downloads/point/last-month/{package}",
+        "https://api.npmjs.org/downloads/range/last-week/{package}"
+      ],
+      "required_files": ["package.json"],
+      "optional_files": ["README.md", "LICENSE", ".npmignore"],
+      "package_manager": "npm",
+      "version_file": "package.json",
+      "version_field": "version",
+      "build_command": "npm run build",
+      "test_command": "npm test",
+      "install_command": "npm install",
+      "publish_flags": ["--access", "public"],
+      "authentication": {
+        "type": "token",
+        "env_var": "NPM_TOKEN",
+        "config_key": "//registry.npmjs.org/:_authToken"
+      }
+    },
+    "pypi": {
+      "name": "pypi",
+      "language": "python",
+      "registry": "https://pypi.org",
+      "api_endpoint": "https://pypi.org/pypi",
+      "deploy_command": "twine upload dist/*",
+      "tracking_endpoints": [
+        "https://pypi.org/pypi/{package}/json"
+      ],
+      "required_files": ["setup.py", "pyproject.toml"],
+      "optional_files": ["README.md", "LICENSE", "MANIFEST.in"],
+      "package_manager": "pip",
+      "version_file": "setup.py",
+      "version_field": "version",
+      "build_command": "python setup.py sdist bdist_wheel",
+      "test_command": "python -m pytest",
+      "install_command": "pip install -r requirements.txt",
+      "publish_flags": [],
+      "authentication": {
+        "type": "token",
+        "env_var": "TWINE_PASSWORD",
+        "config_key": "password"
+      }
+    },
+    "cargo": {
+      "name": "cargo",
+      "language": "rust",
+      "registry": "https://crates.io",
+      "api_endpoint": "https://crates.io/api/v1",
+      "deploy_command": "cargo publish",
+      "tracking_endpoints": [
+        "https://crates.io/api/v1/crates/{package}"
+      ],
+      "required_files": ["Cargo.toml"],
+      "optional_files": ["README.md", "LICENSE", "Cargo.lock"],
+      "package_manager": "cargo",
+      "version_file": "Cargo.toml",
+      "version_field": "version",
+      "build_command": "cargo build --release",
+      "test_command": "cargo test",
+      "install_command": "cargo install",
+      "publish_flags": [],
+      "authentication": {
+        "type": "token",
+        "env_var": "CARGO_REGISTRY_TOKEN",
+        "config_key": "token"
+      }
+    }
+  }
+}
+EOF
+    echo -e "${GREEN}✅ Created basic platform configuration${NC}"
+fi
 
 # Create enhanced default configuration
 echo -e "${BLUE}📝 Creating enhanced configuration...${NC}"
@@ -314,10 +534,13 @@ find "$DATA_DIR" -name "*.sh" -type f -exec chmod +x {} \;
 find "$DATA_DIR" -name "*.py" -type f -exec chmod +x {} \;
 echo -e "${GREEN}✅ All installed scripts made executable${NC}"
 
-# Create symlink for easy access
-if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
-    echo -e "${BLUE}🔗 Creating symlinks...${NC}"
-    ln -sf "$INSTALL_DIR/pak" /usr/local/bin/pak
+# Create global symlink for easy access
+if [ "$CAN_CREATE_GLOBAL_SYMLINK" = "true" ]; then
+    echo -e "${BLUE}🔗 Creating global symlink...${NC}"
+    ln -sf "$INSTALL_DIR/pak" "$GLOBAL_BIN_DIR/pak"
+    echo -e "${GREEN}✅ Global symlink created: $GLOBAL_BIN_DIR/pak${NC}"
+else
+    echo -e "${YELLOW}⚠️  No global symlink created - pak available at: $INSTALL_DIR/pak${NC}"
 fi
 
 # Create enhanced uninstall script
@@ -330,24 +553,25 @@ set -euo pipefail
 
 echo "🗑️  Uninstalling Enhanced Universal Package Tracker & Deployer..."
 
-# Remove main script
-rm -f "$INSTALL_DIR/pak"
-rm -f /usr/local/bin/pak
+# Remove global symlink if it exists
+if [[ -L "$GLOBAL_BIN_DIR/pak" ]]; then
+    echo "🔗 Removing global symlink..."
+    rm -f "$GLOBAL_BIN_DIR/pak"
+    echo "✅ Global symlink removed"
+fi
 
-# Remove configuration and data (with confirmation)
-echo "⚠️  This will remove all configuration and data."
-read -p "Do you want to remove configuration and data? (y/N): " -n 1 -r
+# Remove PAK home directory (with confirmation)
+echo "⚠️  This will remove PAK installation and all configuration/data from:"
+echo "   $PAK_HOME"
+echo ""
+read -p "Do you want to completely remove PAK? (y/N): " -n 1 -r
 echo
-if [[ \$REPLY =~ ^[Yy]$ ]]; then
-    rm -rf "$CONFIG_DIR"
-    rm -rf "$DATA_DIR"
-    rm -rf "$LOG_DIR"
-    echo "✅ All data removed."
+if [[ \$REPLY =~ ^[Yy]\$ ]]; then
+    rm -rf "$PAK_HOME"
+    echo "✅ PAK completely removed from $PAK_HOME"
 else
-    echo "📁 Configuration and data preserved at:"
-    echo "   Config: $CONFIG_DIR"
-    echo "   Data: $DATA_DIR"
-    echo "   Logs: $LOG_DIR"
+    echo "📁 PAK installation preserved at: $PAK_HOME"
+    echo "   You can manually remove it later if needed"
 fi
 
 echo "✅ Uninstallation complete!"
@@ -588,31 +812,42 @@ EOF
 
 # Test installation
 echo -e "${BLUE}🧪 Testing installation...${NC}"
-if command -v pak >/dev/null 2>&1; then
+if [[ -x "$INSTALL_DIR/pak" ]]; then
     echo -e "${GREEN}✅ Installation successful!${NC}"
     echo -e "${CYAN}📋 Installation Summary:${NC}"
+    echo -e "  🏠 PAK Home: $PAK_HOME"
     echo -e "  📦 Main Script: $INSTALL_DIR/pak"
     echo -e "  ⚙️  Config: $CONFIG_DIR"
     echo -e "  📊 Data: $DATA_DIR"
     echo -e "  📋 Logs: $LOG_DIR"
+    if [[ "$CAN_CREATE_GLOBAL_SYMLINK" == "true" ]]; then
+        echo -e "  🔗 Global Link: $GLOBAL_BIN_DIR/pak"
+    fi
+    echo -e "  🌐 Installation Type: $([ "$IS_LOCAL_INSTALL" == "true" ] && echo "Local" || echo "Remote")"
     echo -e ""
     echo -e "${GREEN}🎉 Enhanced Universal Package Tracker & Deployer is ready!${NC}"
     echo -e ""
     echo -e "${YELLOW}📝 Next Steps:${NC}"
-    echo -e "  1. Run: ${GREEN}pak --init${NC}"
-    echo -e "  2. Create package: ${GREEN}pak devex wizard${NC}"
-    echo -e "  3. Security scan: ${GREEN}pak scan [package]${NC}"
-    echo -e "  4. Deploy: ${GREEN}pak deploy [package] --version [version]${NC}"
+    if [[ "$CAN_CREATE_GLOBAL_SYMLINK" == "true" ]]; then
+        echo -e "  1. Initialize: ${GREEN}pak --init${NC}"
+        echo -e "  2. Get help: ${GREEN}pak --help${NC}"
+        echo -e "  3. Deploy package: ${GREEN}pak deploy [package] --version [version]${NC}"
+    else
+        echo -e "  1. Add to PATH: ${GREEN}export PATH=\$PATH:$INSTALL_DIR${NC}"
+        echo -e "  2. Initialize: ${GREEN}pak --init${NC}"
+        echo -e "  3. Get help: ${GREEN}pak --help${NC}"
+        echo -e "  4. Deploy package: ${GREEN}pak deploy [package] --version [version]${NC}"
+    fi
     echo -e ""
     echo -e "${BLUE}🔐 Security Features:${NC}"
-    echo -e "  • OWASP compliance: ${GREEN}pak compliance owasp${NC}"
     echo -e "  • Vulnerability scan: ${GREEN}pak scan${NC}"
     echo -e "  • License check: ${GREEN}pak license-check${NC}"
+    echo -e "  • Dependency audit: ${GREEN}pak dependency-check${NC}"
     echo -e ""
     echo -e "${BLUE}🤖 Automation Features:${NC}"
     echo -e "  • CI/CD pipeline: ${GREEN}pak pipeline create${NC}"
     echo -e "  • Git hooks: ${GREEN}pak hooks install${NC}"
-    echo -e "  • Release: ${GREEN}pak release${NC}"
+    echo -e "  • Release automation: ${GREEN}pak release${NC}"
     echo -e ""
     echo -e "${BLUE}👨‍💻 DevEx Features:${NC}"
     echo -e "  • Interactive wizard: ${GREEN}pak devex wizard${NC}"
@@ -620,8 +855,26 @@ if command -v pak >/dev/null 2>&1; then
     echo -e "  • Environment setup: ${GREEN}pak devex setup${NC}"
     echo -e ""
     echo -e "${BLUE}📖 Documentation: $CONFIG_DIR/README.md${NC}"
+    echo -e "${BLUE}🗑️  Uninstall: $CONFIG_DIR/uninstall.sh${NC}"
+    
+    # Add PATH suggestion if no global symlink
+    if [[ "$CAN_CREATE_GLOBAL_SYMLINK" != "true" ]]; then
+        echo -e ""
+        echo -e "${YELLOW}💡 Add to your shell profile for permanent access:${NC}"
+        echo -e "   ${GREEN}echo 'export PATH=\$PATH:$INSTALL_DIR' >> ~/.bashrc${NC}"
+        echo -e "   ${GREEN}source ~/.bashrc${NC}"
+        echo -e ""
+        echo -e "${YELLOW}💡 Or run with sudo for global installation:${NC}"
+        echo -e "   ${GREEN}sudo bash < <(curl -sSL get.pak.sh)${NC}"
+    fi
 else
     echo -e "${RED}❌ Installation failed!${NC}"
-    echo -e "${YELLOW}💡 Try adding $INSTALL_DIR to your PATH${NC}"
+    echo -e "${YELLOW}💡 The pak script was not installed properly at $INSTALL_DIR/pak${NC}"
+    if [[ "$IS_LOCAL_INSTALL" == "false" ]]; then
+        echo -e "${YELLOW}💡 This might be due to network issues. Try:${NC}"
+        echo -e "   1. Check your internet connection"
+        echo -e "   2. Verify that $BASE_URL/latest.tar.gz is accessible"
+        echo -e "   3. Try a local installation if you have the repository"
+    fi
     exit 1
 fi 

@@ -1,21 +1,46 @@
 #!/bin/bash
 # PAK.sh - Package Automation Kit
-# Main orchestrator script that loads and manages all modules
+# Enhanced multi-platform deployment system with 30+ platform support
 
 # Base configuration
-export PAK_VERSION="2.0.0"
+export PAK_VERSION="3.0.0"
 PAK_DOMAIN="pak.sh"
-export PAK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export PAK_MODULES_DIR="$PAK_DIR/modules"
-export PAK_CONFIG_DIR="$PAK_DIR/config"
-export PAK_DATA_DIR="$PAK_DIR/data"
-export PAK_LOGS_DIR="$PAK_DIR/logs"
-export PAK_TEMPLATES_DIR="$PAK_DIR/templates"
-export PAK_SCRIPTS_DIR="$PAK_DIR/scripts"
+
+# Handle symlinks properly - resolve to actual script location
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT_PATH" ]; do
+    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+done
+
+# Determine PAK installation directory structure
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+if [[ "$SCRIPT_DIR" =~ \.pak/bin$ ]]; then
+    # Installed in user directory (e.g., ~/.pak/bin/)
+    export PAK_HOME="$(dirname "$SCRIPT_DIR")"
+    export PAK_DIR="$PAK_HOME"
+    export PAK_MODULES_DIR="$PAK_HOME/config/modules"
+    export PAK_CONFIG_DIR="$PAK_HOME/config"
+    export PAK_DATA_DIR="$PAK_HOME/data"
+    export PAK_LOGS_DIR="$PAK_HOME/logs"
+    export PAK_TEMPLATES_DIR="$PAK_HOME/config/templates"
+    export PAK_SCRIPTS_DIR="$PAK_HOME/config/scripts"
+else
+    # Development or traditional installation
+    export PAK_DIR="$SCRIPT_DIR"
+    export PAK_MODULES_DIR="$PAK_DIR/modules"
+    export PAK_CONFIG_DIR="$PAK_DIR/config"
+    export PAK_DATA_DIR="$PAK_DIR/data"
+    export PAK_LOGS_DIR="$PAK_DIR/logs"
+    export PAK_TEMPLATES_DIR="$PAK_DIR/templates"
+    export PAK_SCRIPTS_DIR="$PAK_DIR/scripts"
+fi
 
 # Load dynamic ASCII system
 if [[ -f "$PAK_DIR/ascii-letters.sh" ]]; then
     source "$PAK_DIR/ascii-letters.sh"
+elif [[ -f "$SCRIPT_DIR/ascii-letters.sh" ]]; then
+    # For user directory installations, ascii-letters.sh is in the bin directory
+    source "$SCRIPT_DIR/ascii-letters.sh"
 fi
 
 # Global state
@@ -25,13 +50,14 @@ declare -A MODULE_COMMANDS
 export PAK_QUIET_MODE=false
 export PAK_DEBUG_MODE=false
 export PAK_DRY_RUN=false
+export PAK_DEFAULT_PLATFORMS="npm pypi cargo docker"
 
 # Initialize arrays to prevent unbound variable errors
 LOADED_MODULES=()
 MODULE_HOOKS=()
 MODULE_COMMANDS=()
 
-# Logging function
+# Enhanced logging function
 log() {
     local level="$1"
     local message="$2"
@@ -56,6 +82,11 @@ log() {
             echo "[$timestamp] [SUCCESS] $message" >&2
             ;;
     esac
+    
+    # Log to file if logs directory exists
+    if [[ -d "$PAK_LOGS_DIR" ]]; then
+        echo "[$timestamp] [$level] $message" >> "$PAK_LOGS_DIR/pak.log"
+    fi
 }
 
 # Command registration function
@@ -73,10 +104,12 @@ register_hook() {
     local hook_name="$1"
     local module="$2"
     local function="$3"
-    local priority="${4:-50}"
     
-    MODULE_HOOKS["${hook_name}:${priority}:${module}"]="$function"
-    log DEBUG "Registered hook: $hook_name -> $module:$function (priority: $priority)"
+    if [[ -z "${MODULE_HOOKS[$hook_name]}" ]]; then
+        MODULE_HOOKS["$hook_name"]=""
+    fi
+    MODULE_HOOKS["$hook_name"]="${MODULE_HOOKS[$hook_name]} $module:$function"
+    log DEBUG "Registered hook: $hook_name -> $module:$function"
 }
 
 # Module loading function
@@ -85,190 +118,84 @@ load_module() {
     local module_file="$PAK_MODULES_DIR/${module_name}.module.sh"
     
     if [[ -f "$module_file" ]]; then
-        source "$module_file"
-        LOADED_MODULES["$module_name"]="loaded"
-        
-        # Initialize module if init function exists
-        if declare -F "${module_name}_init" > /dev/null; then
-            "${module_name}_init"
+        if [[ -z "${LOADED_MODULES[$module_name]}" ]]; then
+            source "$module_file"
+            LOADED_MODULES["$module_name"]="loaded"
+            log DEBUG "Loaded module: $module_name"
+            
+            # Call module init function if it exists
+            local init_function="${module_name}_init"
+            if declare -F "$init_function" >/dev/null; then
+                "$init_function"
+            fi
+            
+            # Register module commands if function exists
+            local register_function="${module_name}_register_commands"
+            if declare -F "$register_function" >/dev/null; then
+                "$register_function"
+            fi
         fi
-        
-        # Register commands if function exists
-        if declare -F "${module_name}_register_commands" > /dev/null; then
-            "${module_name}_register_commands"
-        fi
-        
-        log INFO "Loaded module: $module_name"
     else
-        log ERROR "Module not found: $module_file"
+        log ERROR "Module not found: $module_name"
         return 1
     fi
 }
 
-# Function to show contextual ASCII art based on command
-show_contextual_ascii() {
-    local command="$1"
-    local platform="$2"
-    local subcommand="$3"
+# Enhanced module loading with dependencies
+load_modules() {
+    local modules=("$@")
     
-    # Don't show ASCII in quiet mode
-    if [[ "$PAK_QUIET_MODE" == "true" ]]; then
-        return
-    fi
+    # Core modules that should be loaded first
+    local core_modules=("core" "platform" "deploy")
     
-    case "$command" in
-        init)
-            show_dynamic_ascii "init"
-            ;;
-        deploy)
-            show_dynamic_ascii "deploy" "$platform"
-            ;;
-        track)
-            show_dynamic_ascii "track"
-            ;;
-        status)
-            show_dynamic_ascii "status"
-            ;;
-        register)
-            build_ascii_word "REGISTER"
-            echo "🔐 Platform Registration Wizard"
-            ;;
-        embed)
-            build_ascii_word "EMBED"
-            echo "📊 Telemetry & Analytics"
-            ;;
-        security|scan)
-            build_ascii_word "SECURITY"
-            echo "🔐 Security Scanning & Compliance"
-            ;;
-        devex)
-            build_ascii_word "DEVEX"
-            echo "👨‍💻 Developer Experience"
-            ;;
-        analytics|stats)
-            build_ascii_word "ANALYTICS"
-            echo "📈 Data Analytics & Insights"
-            ;;
-        monitoring|monitor)
-            build_ascii_word "MONITOR"
-            echo "📊 Real-time Monitoring"
-            ;;
-        automation|pipeline)
-            build_ascii_word "AUTOMATE"
-            echo "🤖 CI/CD & Automation"
-            ;;
-        web|flask)
-            build_ascii_word "WEB"
-            echo "🌐 Web Interface & Dashboard"
-            ;;
-        enterprise)
-            build_ascii_word "ENTERPRISE"
-            echo "🏢 Enterprise Features"
-            ;;
-        version)
-            build_ascii_word "PAK"
-            echo "Version: $PAK_VERSION"
-            ;;
-        help)
-            build_ascii_word "HELP"
-            echo "📚 PAK.sh - Package Automation Kit"
-            echo "Universal package management for 30+ platforms"
-            ;;
-        *)
-            # Show PAK logo for unknown commands
-            build_ascii_word "PAK"
-            ;;
-    esac
-}
-
-# Load all modules
-load_all_modules() {
-    log INFO "Loading PAK.sh modules..."
-    
-    # Load core modules first (essential functionality)
-    load_module "core"
-    load_module "platform"
-    load_module "deploy"
-    load_module "track"
-    load_module "security"
-    load_module "automation"
-    load_module "analytics"
-    load_module "monitoring"
-    load_module "devex"
-    load_module "database"
-    
-    # Load registration and embed modules
-    load_module "register"
-    load_module "embed"
-    
-    # Load enterprise and specialized modules
-    load_module "enterprise"
-    load_module "integration"
-    load_module "lifecycle"
-    load_module "ml"
-    load_module "collaboration"
-    
-    # Load any additional modules from subdirectories
-    for module_dir in "$PAK_MODULES_DIR"/*/; do
-        if [[ -d "$module_dir" ]]; then
-            local dir_name=$(basename "$module_dir")
-            # Skip if already loaded as main module
-            if [[ ! -f "$PAK_MODULES_DIR/${dir_name}.module.sh" ]]; then
-                log DEBUG "Loading module from directory: $dir_name"
-                # Load any .sh files in subdirectories
-                for module_file in "$module_dir"*.sh; do
-                    if [[ -f "$module_file" ]]; then
-                        source "$module_file"
-                        log DEBUG "Loaded module file: $module_file"
-                    fi
-                done
-            fi
+    # Load core modules first
+    for module in "${core_modules[@]}"; do
+        if [[ " ${modules[*]} " =~ " ${module} " ]]; then
+            load_module "$module"
         fi
     done
     
-    log INFO "All modules loaded successfully"
-}
-
-# Execute hooks
-execute_hooks() {
-    local hook_name="$1"
-    local args="${@:2}"
-    
-    # Sort hooks by priority
-    for hook_key in "${!MODULE_HOOKS[@]}"; do
-        if [[ "$hook_key" == "$hook_name:"* ]]; then
-            local function="${MODULE_HOOKS[$hook_key]}"
-            if declare -F "$function" > /dev/null; then
-                log DEBUG "Executing hook: $function"
-                "$function" "$args"
-            fi
+    # Load remaining modules
+    for module in "${modules[@]}"; do
+        if [[ ! " ${core_modules[*]} " =~ " ${module} " ]]; then
+            load_module "$module"
         fi
     done
 }
 
-# Main command dispatcher
-dispatch_command() {
+# Initialize PAK system
+init_pak() {
+    log INFO "Initializing PAK.sh v$PAK_VERSION"
+    
+    # Create necessary directories
+    mkdir -p "$PAK_CONFIG_DIR"
+    mkdir -p "$PAK_DATA_DIR"
+    mkdir -p "$PAK_LOGS_DIR"
+    mkdir -p "$PAK_TEMPLATES_DIR"
+    mkdir -p "$PAK_SCRIPTS_DIR"
+    
+    # Load core modules
+    load_modules "core" "platform" "deploy" "platform-adapters" "deploy-orchestrator" "unified-build" "deployment-validation" "rollback-recovery"
+    
+    log SUCCESS "PAK.sh initialized successfully"
+}
+
+# Enhanced command execution
+execute_command() {
     local command="$1"
-    local args="${@:2}"
+    shift
+    local args=("$@")
     
-    # Execute pre-command hooks
-    execute_hooks "pre_command" "$command" "$args"
-    
-    # Show ASCII art
-    show_contextual_ascii "$command"
-    
-    # Check if command exists
     if [[ -n "${MODULE_COMMANDS[$command]}" ]]; then
-        IFS=':' read -r module function <<< "${MODULE_COMMANDS[$command]}"
+        local module_function="${MODULE_COMMANDS[$command]}"
+        local module="${module_function%:*}"
+        local function="${module_function#*:}"
         
-        if declare -F "$function" > /dev/null; then
-            log DEBUG "Executing command: $command -> $function"
-            "$function" "$args"
-            local result=$?
-            
-            # Execute post-command hooks
-            execute_hooks "post_command" "$command" "$result"
-            return $result
+        log DEBUG "Executing command: $command -> $module:$function"
+        
+        if declare -F "$function" >/dev/null; then
+            "$function" "${args[@]}"
+            return $?
         else
             log ERROR "Function not found: $function"
             return 1
@@ -280,188 +207,198 @@ dispatch_command() {
     fi
 }
 
-# Show help
+# Enhanced help system
 show_help() {
-    echo "PAK.sh - Package Automation Kit"
-    echo "Version: $PAK_VERSION"
-    echo
+    echo "PAK.sh - Package Automation Kit v$PAK_VERSION"
+    echo "============================================="
+    echo ""
+    echo "Multi-platform deployment system with 30+ platform support"
+    echo ""
     echo "Usage: pak <command> [options]"
-    echo
-    echo "🚀 CORE COMMANDS:"
-    echo "  init                    # Initialize PAK in current directory"
-    echo "  register               # Interactive platform registration wizard"
-    echo "  deploy [package]        # Deploy to all configured platforms"
-    echo "  track [package]         # Track package statistics"
-    echo "  scan [package]          # Security vulnerability scan"
-    echo "  monitor [package]       # Start real-time monitoring"
-    echo "  status                  # Show system status"
-    echo "  version                 # Show version information"
-    echo
-    echo "📦 DEPLOYMENT COMMANDS:"
-    echo "  deploy list             # List deployment history"
-    echo "  deploy rollback         # Rollback deployment"
-    echo "  deploy verify           # Verify deployment"
-    echo "  deploy clean            # Clean deployment artifacts"
-    echo
-    echo "📊 TRACKING & ANALYTICS:"
-    echo "  stats [package]         # Show package statistics"
-    echo "  export [package]        # Export tracking data"
-    echo "  analytics [package]     # Generate analytics report"
-    echo
-    echo "🔐 SECURITY COMMANDS:"
-    echo "  security audit          # Full security audit"
-    echo "  security fix            # Auto-fix security issues"
-    echo "  license check           # Check license compliance"
-    echo "  license validate        # Validate licenses"
-    echo
-    echo "🤖 AUTOMATION COMMANDS:"
-    echo "  pipeline create         # Create CI/CD pipeline"
-    echo "  pipeline list           # List pipelines"
-    echo "  git hooks install       # Install Git hooks"
-    echo "  workflow create         # Create workflow"
-    echo
-    echo "📈 MONITORING COMMANDS:"
-    echo "  health [package]        # Health check package"
-    echo "  alerts list             # List alerts"
-    echo "  alerts create           # Create alert"
-    echo
-    echo "👨‍💻 DEVELOPER EXPERIENCE:"
-    echo "  devex wizard            # Interactive setup wizard"
-    echo "  devex init              # Initialize project"
-    echo "  devex setup             # Setup development environment"
-    echo "  devex template create   # Create template"
-    echo
-    echo "🌐 WEB INTERFACE & INTEGRATION:"
-    echo "  web                     # Start web interface"
-    echo "  web start               # Start web server"
-    echo "  web stop                # Stop web server"
-    echo "  web status              # Check web server status"
-    echo "  webhook add             # Add webhook"
-    echo "  api start               # Start API server"
-    echo "  plugin install          # Install plugin"
-    echo
-    echo "🏢 ENTERPRISE COMMANDS:"
-    echo "  team add                # Add team member"
-    echo "  audit start             # Start audit logging"
-    echo "  enterprise setup        # Setup enterprise features"
-    echo
-    echo "🎨 USER INTERFACE:"
-    echo "  ascii show              # Show ASCII art"
-    echo "  config get/set          # Manage configuration"
-    echo "  db status               # Show database status"
-    echo "  log show                # Show recent logs"
-    echo
-    echo "🔄 LIFECYCLE COMMANDS:"
-    echo "  version bump            # Bump version"
-    echo "  release create          # Create release"
-    echo "  deps check              # Check dependencies"
-    echo
-    echo "🔍 DEBUGGING & PERFORMANCE:"
-    echo "  debug enable            # Enable debug mode"
-    echo "  troubleshoot            # Troubleshoot issue"
-    echo "  optimize cache          # Optimize cache"
-    echo "  perf benchmark          # Benchmark package"
-    echo
-    echo "🌐 NETWORKING & API:"
-    echo "  network test            # Test network connectivity"
-    echo "  api key                 # Set API key"
-    echo "  api test                # Test API connection"
-    echo
-    echo "📱 MOBILE & I18N:"
-    echo "  mobile setup            # Setup mobile support"
-    echo "  locale set              # Set locale"
-    echo "  timezone set            # Set timezone"
-    echo
-    echo "🔄 UPDATE & MAINTENANCE:"
-    echo "  update check            # Check for updates"
-    echo "  maintenance start       # Start maintenance mode"
-    echo "  backup create           # Create backup"
-    echo
-    echo "📊 REPORTING & COMPLIANCE:"
-    echo "  report generate         # Generate report"
-    echo "  gdpr check              # Check GDPR compliance"
-    echo "  policy enforce          # Enforce policies"
-    echo
-    echo "🎯 SPECIALIZED COMMANDS:"
-    echo "  unity deploy            # Deploy Unity asset"
-    echo "  docker build            # Build Docker image"
-    echo "  aws deploy              # Deploy to AWS"
-    echo "  vscode setup            # Setup VS Code integration"
-    echo
-    echo "🔗 EMBED & TELEMETRY:"
-    echo "  embed init              # Initialize embed system"
-    echo "  embed telemetry         # Track telemetry events"
-    echo "  embed analytics         # Analytics operations"
-    echo "  embed track             # Track various events"
-    echo "  embed report            # Generate reports"
-    echo
-    echo "📚 HELP & DOCUMENTATION:"
-    echo "  help [command]          # Command-specific help"
-    echo "  docs                    # Show documentation"
-    echo "  docs search             # Search documentation"
-    echo
+    echo ""
+    echo "Core Commands:"
+    echo "  pak deploy <package> [version] [platforms] [pipeline]"
+    echo "  pak build <package> [version] [platforms]"
+    echo "  pak test <package> [platforms]"
+    echo "  pak rollback <package> [version] [platforms]"
+    echo "  pak release <package> [version] [platforms]"
+    echo ""
+    echo "Platform Commands:"
+    echo "  pak platforms                    - List available platforms"
+    echo "  pak platform-info <platform>     - Show platform information"
+    echo "  pak platform-health <platform>   - Check platform health"
+    echo "  pak platform-test <platform>     - Test platform connection"
+    echo ""
+    echo "Adapter Commands:"
+    echo "  pak adapters                     - List platform adapters"
+    echo "  pak adapter-info <adapter>       - Show adapter information"
+    echo "  pak adapter-test <adapter>       - Test adapter"
+    echo "  pak adapter-auth <adapter>       - Set up authentication"
+    echo "  pak adapter-deploy <adapter> <package> [version]"
+    echo ""
+    echo "Build Commands:"
+    echo "  pak build-detect <package>       - Detect project type"
+    echo "  pak build-matrix <package>       - Build matrix"
+    echo "  pak build-cache <action>         - Manage build cache"
+    echo "  pak build-artifacts <package>    - List build artifacts"
+    echo "  pak build-clean <package>        - Clean build artifacts"
+    echo "  pak build-validate <package>     - Validate build configuration"
+    echo ""
+    echo "Validation Commands:"
+    echo "  pak validate-pre <package> [platforms]  - Pre-deployment validation"
+    echo "  pak validate-post <package> [platforms] - Post-deployment validation"
+    echo "  pak validate-license <package>   - Validate license compatibility"
+    echo "  pak validate-deps <package>      - Validate dependencies"
+    echo "  pak validate-conflicts <package> - Check version conflicts"
+    echo "  pak validate-integrity <package> - Validate package integrity"
+    echo "  pak validate-health <package>    - Check platform health"
+    echo ""
+    echo "Rollback Commands:"
+    echo "  pak rollback-status <deployment> - Show rollback status"
+    echo "  pak rollback-history             - Show rollback history"
+    echo "  pak rollback-automate <deployment> [platforms] - Automated rollback"
+    echo "  pak rollback-manual <deployment> [platforms]  - Manual rollback"
+    echo "  pak rollback-verify <deployment> - Verify rollback completion"
+    echo "  pak rollback-cleanup [days]      - Clean up old rollback data"
+    echo ""
+    echo "Deployment Commands:"
+    echo "  pak deploy-parallel <package> [version] [platforms] - Parallel deployment"
+    echo "  pak deploy-pipeline <package> [version] [platforms] [pipeline] - Pipeline deployment"
+    echo "  pak deploy-status <deployment>   - Show deployment status"
+    echo "  pak deploy-history [limit]       - Show deployment history"
+    echo "  pak deploy-cancel <deployment>   - Cancel deployment"
+    echo "  pak deploy-retry <deployment> [platform] - Retry deployment"
+    echo "  pak deploy-validate <package> [version] - Validate deployment"
+    echo "  pak deploy-test <package> [platforms] - Test deployment (dry run)"
+    echo ""
     echo "Examples:"
-    echo "  pak register                    # Start registration wizard"
-    echo "  pak deploy my-package --version 1.0.0"
-    echo "  pak track my-package"
-    echo "  pak security audit my-package"
-    echo "  pak devex wizard"
-    echo "  pak web                        # Start web interface"
-    echo "  pak embed telemetry install"
-    echo
-    echo "For complete command reference, visit: https://pak.sh/commands"
-    echo "For more information, visit: https://pak.sh"
+    echo "  pak deploy my-package 1.0.0"
+    echo "  pak deploy my-package 1.0.0 npm pypi cargo"
+    echo "  pak deploy my-package 1.0.0 all parallel"
+    echo "  pak build my-package"
+    echo "  pak test my-package npm pypi"
+    echo "  pak rollback my-package 1.0.0"
+    echo "  pak validate-pre my-package"
+    echo "  pak platforms"
+    echo "  pak adapters"
+    echo ""
+    echo "Options:"
+    echo "  --debug                          - Enable debug mode"
+    echo "  --dry-run                        - Dry run mode"
+    echo "  --quiet                          - Quiet mode"
+    echo "  --help, -h                       - Show this help"
+    echo "  --version, -v                    - Show version"
+    echo ""
+    echo "For more information, visit: https://$PAK_DOMAIN"
 }
 
-# Main function
+# Enhanced version display
+show_version() {
+    echo "PAK.sh v$PAK_VERSION"
+    echo "Multi-platform deployment system"
+    echo "Supports 30+ package platforms"
+    echo ""
+    echo "Platforms: npm, yarn, pnpm, jspm, pypi, conda, poetry, cargo, go, maven, gradle, nuget, docker, helm, homebrew, snap, and more..."
+    echo ""
+    echo "Visit: https://$PAK_DOMAIN"
+}
+
+# Enhanced argument parsing
+parse_args() {
+    local args=("$@")
+    local command=""
+    local command_args=()
+    
+    for arg in "${args[@]}"; do
+        case "$arg" in
+            --debug)
+                export PAK_DEBUG_MODE=true
+                ;;
+            --dry-run)
+                export PAK_DRY_RUN=true
+                ;;
+            --quiet)
+                export PAK_QUIET_MODE=true
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            --version|-v)
+                show_version
+                exit 0
+                ;;
+            -*)
+                log ERROR "Unknown option: $arg"
+                show_help
+                exit 1
+                ;;
+            *)
+                if [[ -z "$command" ]]; then
+                    command="$arg"
+                else
+                    command_args+=("$arg")
+                fi
+                ;;
+        esac
+    done
+    
+    if [[ -z "$command" ]]; then
+        show_help
+        exit 1
+    fi
+    
+    # Execute command
+    execute_command "$command" "${command_args[@]}"
+    return $?
+}
+
+# Enhanced error handling
+handle_error() {
+    local exit_code=$?
+    local line_number=$1
+    
+    if [[ $exit_code -ne 0 ]]; then
+        log ERROR "Error occurred at line $line_number (exit code: $exit_code)"
+        
+        # Show helpful error information
+        case $exit_code in
+            1)
+                log ERROR "General error - check command syntax and arguments"
+                ;;
+            2)
+                log ERROR "Missing dependency - ensure required tools are installed"
+                ;;
+            126)
+                log ERROR "Permission denied - check file permissions"
+                ;;
+            127)
+                log ERROR "Command not found - ensure required tools are in PATH"
+                ;;
+            *)
+                log ERROR "Unexpected error - check logs for details"
+                ;;
+        esac
+        
+        exit $exit_code
+    fi
+}
+
+# Set up error handling
+trap 'handle_error $LINENO' ERR
+
+# Main execution
 main() {
-    # Parse command line arguments
-    local command="$1"
-    local args="${@:2}"
+    local args=("$@")
     
-    # Handle special flags
-    case "$command" in
-        --quiet|-q)
-            PAK_QUIET_MODE=true
-            command="$2"
-            args="${@:3}"
-            ;;
-        --debug|-d)
-            PAK_DEBUG_MODE=true
-            command="$2"
-            args="${@:3}"
-            ;;
-        --dry-run|-n)
-            PAK_DRY_RUN=true
-            command="$2"
-            args="${@:3}"
-            ;;
-    esac
+    # Initialize PAK system
+    init_pak
     
-    # Load modules
-    load_all_modules
-    
-    # Execute pre-init hooks
-    execute_hooks "pre_init"
-    
-    # Execute init hooks
-    execute_hooks "post_init"
-    
-    # Handle commands
-    case "$command" in
-        ""|help|--help|-h)
-            show_help
-            ;;
-        version|--version|-v)
-            show_contextual_ascii "version"
-            ;;
-        *)
-            dispatch_command "$command" "$args"
-            ;;
-    esac
+    # Parse and execute arguments
+    parse_args "${args[@]}"
 }
 
-# Run main function if script is executed directly
+# Execute main function if script is run directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
