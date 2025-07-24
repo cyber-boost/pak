@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}PAK.sh - Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Dashboard</h1>
+    <p>Welcome back, {{ user.name }}!</p>
+    
+    <div class="grid" style="margin-top: 2rem;">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_packages|default(0) }}</div>
+            <div class="stats-label">Total Packages</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.active_installs|default(0) }}</div>
+            <div class="stats-label">Active Installs</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.success_rate|default(0) }}%</div>
+            <div class="stats-label">Success Rate</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.uptime|default(0) }}%</div>
+            <div class="stats-label">System Uptime</div>
+        </div>
+    </div>
+</div>
+
+{% if pak_status %}
+<div class="card">
+    <h2>PAK.sh System Status</h2>
+    <div class="grid">
+        <div class="stats-card">
+            <div class="stats-number">{{ pak_status.version|default('Unknown') }}</div>
+            <div class="stats-label">PAK.sh Version</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ pak_status.active_projects|default(0) }}</div>
+            <div class="stats-label">Active Projects</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ pak_status.config_files|length }}</div>
+            <div class="stats-label">Config Files</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-number">{{ pak_status.recent_deployments|length }}</div>
+            <div class="stats-label">Recent Deployments</div>
+        </div>
+    </div>
+    
+    {% if pak_status.recent_deployments %}
+    <div style="margin-top: 2rem;">
+        <h3>Recent Deployments</h3>
+        <div style="color: var(--text-secondary);">
+            {% for deployment in pak_status.recent_deployments %}
+            <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                <strong>{{ deployment.project }}</strong> - {{ deployment.environment }}
+                <span class="status-badge status-{{ deployment.status }}">
+                    {{ deployment.status }}
+                </span>
+                <br>
+                <small>{{ deployment.created_at }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Quick Actions</h2>
+    <div class="grid">
+        <div>
+            <h3>Project Management</h3>
+            <a href="{{ url_for('projects') }}" class="btn">View Projects</a>
+        </div>
+        
+        <div>
+            <h3>Telemetry</h3>
+            <a href="{{ url_for('telemetry') }}" class="btn">View Analytics</a>
+        </div>
+        
+        <div>
+            <h3>Commands</h3>
+            <a href="{{ url_for('commands') }}" class="btn">View Commands</a>
+        </div>
+        
+        {% if user.role == 'admin' %}
+        <div>
+            <h3>Administration</h3>
+            <a href="{{ url_for('admin_users') }}" class="btn">Manage Users</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Recent Activity</h2>
+    {% if recent_activity %}
+        <div style="color: var(--text-secondary);">
+            {% for activity in recent_activity %}
+            <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                <strong>{{ activity.action }}</strong> - {{ activity.timestamp }}
+                <br>
+                <small>{{ activity.description }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--text-secondary);">No recent activity</p>
+    {% endif %}
+</div>
+
+<style>
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+}
+
+.status-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6EE7B7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-failed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #FCA5A5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-running {
+    background: rgba(245, 158, 11, 0.2);
+    color: #FCD34D;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-pending {
+    background: rgba(99, 102, 241, 0.2);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+</style>
+{% endblock %} 
