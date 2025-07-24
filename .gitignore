@@ -1,10 +1,31 @@
 # PAK.sh ignore file
 
+# CRITICAL SECURITY: Exclude all PAK-related sensitive directories and files
+pak/
+pak_finish/
+bash_central/
+install/
+tests/
+wrappers/
+assets/
+svg/
+web_py/
+
 # Exclude old web directory - only web_py should be included
 web/
 z_archive/
 admin/
 summaries/
+
+# Exclude sensitive configuration and documentation files
+.pakignore
+pak.conf
+CLAUDE.md
+abc.txt
+checklist.md
+cleanup-pak-server.sh
+package-config-template.json
+
 # Python cache and compiled files
 __pycache__/
 *.pyc
@@ -70,3 +91,10 @@ credentials.yml
 *.bak
 *.backup
 *.old
+
+# Additional security exclusions
+*.secret
+*.private
+config.local.*
+secrets/
+private/
