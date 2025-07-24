@@ -53,7 +53,7 @@ Successfully updated the Flask web_py application to use the beautiful PAK.sh br
 - `web_py/templates/auth.html` - Beautiful terminal-style authentication
 
 ### Static Assets
-- `web_py/static/pak-logo.svg` - Full PAK.sh logo with gradients and effects
+- `web_py/static/pak-logo.svg` - PAK.sh stacked logo (copied from svg/pak-stacked.svg)
 
 ### Key Features Added
 - **Professional Logo**: Refined PAK.sh logo with terminal window
